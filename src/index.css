@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  --color-accent: #6366f1;
+  --color-accent-hover: #4f46e5;
+  --color-accent-muted: #818cf8;
+  --color-accent-subtle: #eef2ff;
+
+  --color-success: #10b981;
+  --color-success-subtle: #ecfdf5;
+  --color-warning: #f59e0b;
+  --color-warning-subtle: #fffbeb;
+  --color-danger: #ef4444;
+  --color-danger-subtle: #fef2f2;
+  --color-info: #3b82f6;
+  --color-info-subtle: #eff6ff;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 4px 12px -2px rgb(0 0 0 / 0.05);
+  --shadow-lift: 0 8px 24px -4px rgb(0 0 0 / 0.08), 0 4px 8px -4px rgb(0 0 0 / 0.04);
+}
+
+:root {
+  color-scheme: light;
+
+  --bg-primary: #fafafa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f4f4f5;
+  --bg-elevated: #ffffff;
+  --bg-sidebar: #ffffff;
+  --bg-hover: #f4f4f5;
+  --bg-active: #eef2ff;
+
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --text-tertiary: #a1a1aa;
+  --text-inverse: #ffffff;
+
+  --border-primary: #e4e4e7;
+  --border-secondary: #f4f4f5;
+  --border-focus: #6366f1;
+
+  --gradient-brand: linear-gradient(135deg, #6366f1 0%, #818cf8 50%, #a5b4fc 100%);
+  --gradient-surface: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  --gradient-sidebar: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --bg-primary: #09090b;
+  --bg-secondary: #18181b;
+  --bg-tertiary: #27272a;
+  --bg-elevated: #18181b;
+  --bg-sidebar: #18181b;
+  --bg-hover: #27272a;
+  --bg-active: #312e81;
+
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #71717a;
+  --text-inverse: #ffffff;
+
+  --border-primary: #3f3f46;
+  --border-secondary: #27272a;
+  --border-focus: #818cf8;
+
+  --gradient-brand: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%);
+  --gradient-surface: linear-gradient(180deg, #18181b 0%, #09090b 100%);
+  --gradient-sidebar: linear-gradient(180deg, #18181b 0%, #09090b 100%);
+
+  --color-accent-subtle: #1e1b4b;
+  --color-success-subtle: #052e16;
+  --color-warning-subtle: #451a03;
+  --color-danger-subtle: #450a0a;
+  --color-info-subtle: #172554;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}

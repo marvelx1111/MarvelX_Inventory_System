@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Marvel X — Dealership ERP
+
+A complete ERP dashboard for a car dealership with an integrated PPF (paint protection film) installation business.
+
+## Tech Stack
+
+- React 19 + Vite + TypeScript
+- Tailwind CSS v4
+- Framer Motion
+- Recharts
+- React Router v7
+- In-memory typed data store (API-ready)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:5173](http://localhost:5173)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Demo Accounts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Username | Password | Role |
+|----------|----------|------|
+| `admin` | `admin123` | Full access |
+| `sales` | `sales123` | Sales & inventory |
+| `ppf_manager` | `ppf123` | PPF studio only |
 
-## Learn More
+## Features
 
-To learn more about Next.js, take a look at the following resources:
+- **Dashboard** — KPI cards, sales/profit charts, audit activity feed
+- **Vehicle Inventory** — Search, filter, detail with documents checklist
+- **Purchases** — Record acquisitions, auto-create inventory
+- **Sales** — Multi-step sale flow with installments & delivery
+- **Customers** — Directory with purchase/sale history
+- **Expenses** — Vehicle & showroom expenses with summaries
+- **Investors** — Investments and monthly returns
+- **PPF Studio** — Job kanban, roll inventory, warranties
+- **Admin** — Users/roles and audit log viewer
+- **Global search** — `Ctrl+K` / `⌘K` command palette
+- **Dark mode** — Toggle in sidebar
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Build
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run build
+npm run preview
+```
