@@ -15,9 +15,10 @@ export const CUSTOMER_EDIT_FIELDS: EditFieldConfig[] = [
   },
   { key: 'cnic', label: 'CNIC', placeholder: '35202-1234567-1' },
   { key: 'mobile', label: 'Mobile', type: 'tel', required: true },
-  { key: 'whatsapp', label: 'WhatsApp', type: 'tel' },
+  { key: '_contact_heading', label: 'WhatsApp & address', type: 'heading' },
+  { key: 'whatsapp', label: 'WhatsApp', type: 'tel', placeholder: '03xx-xxxxxxx' },
+  { key: 'address', label: 'Address', type: 'textarea', rows: 2, placeholder: 'Street, area, city' },
   { key: 'email', label: 'Email', type: 'email' },
-  { key: 'address', label: 'Address', type: 'textarea', rows: 2 },
   { key: 'city', label: 'City', required: true },
   { key: 'remarks', label: 'Remarks', type: 'textarea', rows: 2 },
 ];
@@ -134,6 +135,11 @@ export const CUSTOMER_CREATE_DEFAULT_VALUES: Record<string, string> = {
   address: '',
   city: 'Lahore',
   remarks: '',
+};
+
+export const CUSTOMER_DEALER_DEFAULT_VALUES: Record<string, string> = {
+  ...CUSTOMER_CREATE_DEFAULT_VALUES,
+  customer_type: 'dealer',
 };
 
 export function parseCustomerFormValues(values: Record<string, string>) {

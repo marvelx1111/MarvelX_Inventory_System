@@ -146,11 +146,13 @@ export function CustomersPage() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         title="Add customer"
-        description="Enter contact details for the new customer."
+        description="Fill in all contact fields — WhatsApp and address are in the section below Mobile."
         fields={CUSTOMER_EDIT_FIELDS}
         values={CUSTOMER_CREATE_DEFAULT_VALUES}
         onSave={handleCreate}
         saving={saving}
+        size="xl"
+        saveLabel="Add customer"
       />
     </PageTransition>
   );

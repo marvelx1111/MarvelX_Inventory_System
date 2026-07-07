@@ -12,7 +12,9 @@
     "db:crosscheck": "tsx scripts/supabase-crosscheck.ts",
     "db:edit-check": "tsx scripts/edit-system-loop.ts",
     "ui:edit-check": "tsx scripts/ui-edit-loop.ts",
-    "ui:edit-check:prod": "tsx scripts/ui-edit-loop.ts https://marvelx-inventory-system.vercel.app"
+    "ui:edit-check:prod": "tsx scripts/ui-edit-loop.ts https://marvelx-inventory-system.vercel.app",
+    "ui:create-check": "tsx scripts/create-customer-loop.ts",
+    "ui:create-check:prod": "tsx scripts/create-customer-loop.ts https://marvelx-inventory-system.vercel.app"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.1",

@@ -9,10 +9,16 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { Textarea } from '@/components/ui/Textarea';
+import { EditRecordModal } from '@/components/ui/EditRecordModal';
+import {
+  CUSTOMER_DEALER_DEFAULT_VALUES,
+  CUSTOMER_EDIT_FIELDS,
+  parseCustomerFormValues,
+} from '@/config/edit-fields';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
-import type { PaymentMethod } from '@/types';
+import type { CustomerType, PaymentMethod } from '@/types';
 import { formatDate, formatPKR } from '@/utils/format';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
@@ -36,6 +42,12 @@ const TRANSMISSION_OPTIONS = [
   { value: 'Manual', label: 'Manual' },
   { value: 'CVT', label: 'CVT' },
 ];
+
+const TYPE_LABEL: Record<CustomerType, string> = {
+  individual: 'Individual',
+  dealer: 'Dealer',
+  corporate: 'Corporate',
+};
 
 const initialForm = {
   seller_customer_id: '',
@@ -64,6 +76,8 @@ export function PurchasesPage() {
   const { success, error } = useToast();
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
+  const [createSellerOpen, setCreateSellerOpen] = useState(false);
+  const [creatingSeller, setCreatingSeller] = useState(false);
   const [, refresh] = useState(0);
 
   const customers = store.getCustomers();
@@ -73,6 +87,28 @@ export function PurchasesPage() {
 
   const update = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCreateSeller = async (values: Record<string, string>) => {
+    setCreatingSeller(true);
+    try {
+      const created = await store.createCustomer(parseCustomerFormValues(values));
+      store.addAuditLog({
+        user_id: user?.user_id ?? 'usr_001',
+        action: 'CREATE',
+        table_name: 'customers',
+        record_id: created.customer_id,
+        ip_address: '127.0.0.1',
+      });
+      update('seller_customer_id', created.customer_id);
+      setCreateSellerOpen(false);
+      success('Seller added', `${created.full_name} is ready to select as seller.`);
+      refresh((n) => n + 1);
+    } catch (err) {
+      error('Could not add seller', err instanceof Error ? err.message : 'Save failed.');
+    } finally {
+      setCreatingSeller(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -155,17 +191,24 @@ export function PurchasesPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Select
-                label="Seller (Customer)"
-                required
-                value={form.seller_customer_id}
-                onChange={(e) => update('seller_customer_id', e.target.value)}
-                placeholder="Select seller"
-                options={customers.map((c) => ({
-                  value: c.customer_id,
-                  label: `${c.full_name} · ${c.city}`,
-                }))}
-              />
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <div className="flex-1">
+                  <Select
+                    label="Seller (Customer / Dealer)"
+                    required
+                    value={form.seller_customer_id}
+                    onChange={(e) => update('seller_customer_id', e.target.value)}
+                    placeholder="Select seller"
+                    options={customers.map((c) => ({
+                      value: c.customer_id,
+                      label: `${c.full_name} · ${TYPE_LABEL[c.customer_type] ?? c.customer_type} · ${c.city}`,
+                    }))}
+                  />
+                </div>
+                <Button type="button" variant="secondary" onClick={() => setCreateSellerOpen(true)}>
+                  + Add seller/dealer
+                </Button>
+              </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
@@ -317,6 +360,19 @@ export function PurchasesPage() {
           </CardContent>
         </Card>
       </div>
+
+      <EditRecordModal
+        open={createSellerOpen}
+        onClose={() => setCreateSellerOpen(false)}
+        title="Add seller / dealer"
+        description="Enter dealer contact details — WhatsApp and address are below Mobile."
+        fields={CUSTOMER_EDIT_FIELDS}
+        values={CUSTOMER_DEALER_DEFAULT_VALUES}
+        onSave={handleCreateSeller}
+        saving={creatingSeller}
+        size="xl"
+        saveLabel="Add seller"
+      />
     </PageTransition>
   );
 }
