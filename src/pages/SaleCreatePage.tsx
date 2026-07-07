@@ -87,43 +87,47 @@ export function SaleCreatePage() {
     if (!selectedVehicle) return;
 
     setSubmitting(true);
-    window.setTimeout(() => {
-      let finalCustomerId = customerId;
+    void (async () => {
+      try {
+        let finalCustomerId = customerId;
 
-      if (showNewCustomer) {
-        const created = store.createCustomer(newCustomer);
-        finalCustomerId = created.customer_id;
-      }
+        if (showNewCustomer) {
+          const created = await store.createCustomer(newCustomer);
+          finalCustomerId = created.customer_id;
+        }
 
-      const sale = store.createSale({
-        vehicle_id: vehicleId,
-        customer_id: finalCustomerId,
-        sale_date: saleDate,
-        sale_price: Number(salePrice),
-        discount: Number(discount),
-        advance: Number(advance),
-        payment_method: paymentMethod,
-        salesperson: user?.full_name ?? 'Staff',
-      });
+        const sale = store.createSale({
+          vehicle_id: vehicleId,
+          customer_id: finalCustomerId,
+          sale_date: saleDate,
+          sale_price: Number(salePrice),
+          discount: Number(discount),
+          advance: Number(advance),
+          payment_method: paymentMethod,
+          salesperson: user?.full_name ?? 'Staff',
+        });
 
-      if (!sale) {
-        error('Sale failed', 'Unable to create sale. Vehicle may already be sold.');
+        if (!sale) {
+          error('Sale failed', 'Unable to create sale. Vehicle may already be sold.');
+          return;
+        }
+
+        store.addAuditLog({
+          user_id: user?.user_id ?? 'usr_001',
+          action: 'CREATE',
+          table_name: 'sales',
+          record_id: sale.sale_id,
+          ip_address: '127.0.0.1',
+        });
+
+        success('Sale created', `Sale ${sale.sale_id} recorded successfully`);
+        navigate(`/sales/${sale.sale_id}`);
+      } catch (err) {
+        error('Sale failed', err instanceof Error ? err.message : 'Could not save sale.');
+      } finally {
         setSubmitting(false);
-        return;
       }
-
-      store.addAuditLog({
-        user_id: user?.user_id ?? 'usr_001',
-        action: 'CREATE',
-        table_name: 'sales',
-        record_id: sale.sale_id,
-        ip_address: '127.0.0.1',
-      });
-
-      success('Sale created', `Sale ${sale.sale_id} recorded successfully`);
-      navigate(`/sales/${sale.sale_id}`);
-      setSubmitting(false);
-    }, 300);
+    })();
   };
 
   if (loading) {

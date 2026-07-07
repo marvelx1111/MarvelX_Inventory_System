@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { DataConnectionBanner } from './DataConnectionBanner';
 import { CommandPalette, useCommandPalette } from './CommandPalette';
 import { MobileNav } from './MobileNav';
 import { Sidebar } from './Sidebar';
@@ -67,6 +68,8 @@ export function AppLayout({ children }: AppLayoutProps) {
             Search
           </Button>
         </header>
+
+        <DataConnectionBanner />
 
         <main className="flex-1 overflow-y-auto px-4 py-6 pb-24 md:px-8 md:py-8 md:pb-8">
           {children ?? <Outlet />}

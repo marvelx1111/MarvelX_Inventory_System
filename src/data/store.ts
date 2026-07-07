@@ -1,5 +1,9 @@
 import { createSeedData } from '@/data/seed';
-import { persistRowInsert, persistRowUpdate } from '@/data/supabase-sync';
+import { persistRowInsert, persistRowUpdate, type PersistResult } from '@/data/supabase-sync';
+
+function ensurePersisted(result: PersistResult): void {
+  if (!result.ok) throw new Error(result.error);
+}
 import type {
   AppData,
   AuditLog,
@@ -473,7 +477,7 @@ class DataStore {
     return record;
   }
 
-  createCustomer(input: CreateCustomerInput): Customer {
+  async createCustomer(input: CreateCustomerInput): Promise<Customer> {
     const customer: Customer = {
       customer_id: this.nextId('cus'),
       ...input,
@@ -481,6 +485,8 @@ class DataStore {
     };
 
     this.data.customers.push(customer);
+    const persist = await persistRowInsert('customers', customer as unknown as Record<string, unknown>);
+    ensurePersisted(persist);
     return customer;
   }
 
@@ -493,8 +499,7 @@ class DataStore {
 
     this.data.customers[index] = { ...this.data.customers[index], ...updates };
     const customer = this.data.customers[index];
-
-    await persistRowUpdate('customers', 'customer_id', customerId, updates);
+    ensurePersisted(await persistRowUpdate('customers', 'customer_id', customerId, updates));
     return customer;
   }
 
@@ -512,7 +517,7 @@ class DataStore {
     if (normalized.total_cost !== undefined) normalized.total_cost = Number(normalized.total_cost);
 
     this.data.vehicles[index] = { ...this.data.vehicles[index], ...normalized };
-    await persistRowUpdate('vehicles', 'vehicle_id', vehicleId, normalized);
+    ensurePersisted(await persistRowUpdate('vehicles', 'vehicle_id', vehicleId, normalized));
     return this.data.vehicles[index];
   }
 
@@ -546,7 +551,7 @@ class DataStore {
     }
 
     this.data.sales[index] = sale;
-    await persistRowUpdate('sales', 'sale_id', saleId, {
+    ensurePersisted(await persistRowUpdate('sales', 'sale_id', saleId, {
       sale_date: sale.sale_date,
       sale_price: sale.sale_price,
       discount: sale.discount,
@@ -555,7 +560,7 @@ class DataStore {
       payment_method: sale.payment_method,
       salesperson: sale.salesperson,
       profit: sale.profit,
-    });
+    }));
     return sale;
   }
 
@@ -567,7 +572,7 @@ class DataStore {
     if (index === -1) return null;
 
     this.data.deliveryRecords[index] = { ...this.data.deliveryRecords[index], ...updates };
-    await persistRowUpdate('delivery_records', 'delivery_id', deliveryId, updates);
+    ensurePersisted(await persistRowUpdate('delivery_records', 'delivery_id', deliveryId, updates));
     return this.data.deliveryRecords[index];
   }
 
@@ -581,7 +586,7 @@ class DataStore {
       ...input,
     };
     this.data.deliveryRecords.push(record);
-    await persistRowInsert('delivery_records', record as unknown as Record<string, unknown>);
+    ensurePersisted(await persistRowInsert('delivery_records', record as unknown as Record<string, unknown>));
     return record;
   }
 
@@ -593,7 +598,7 @@ class DataStore {
     if (index === -1) return null;
 
     this.data.investors[index] = { ...this.data.investors[index], ...updates };
-    await persistRowUpdate('investors', 'investor_id', investorId, updates);
+    ensurePersisted(await persistRowUpdate('investors', 'investor_id', investorId, updates));
     return this.data.investors[index];
   }
 
@@ -605,7 +610,7 @@ class DataStore {
     if (index === -1) return null;
 
     this.data.ppfCustomers[index] = { ...this.data.ppfCustomers[index], ...updates };
-    await persistRowUpdate('ppf_customers', 'ppf_customer_id', ppfCustomerId, updates);
+    ensurePersisted(await persistRowUpdate('ppf_customers', 'ppf_customer_id', ppfCustomerId, updates));
     return this.data.ppfCustomers[index];
   }
 
@@ -622,10 +627,10 @@ class DataStore {
     }
 
     this.data.ppfJobCards[index] = { ...this.data.ppfJobCards[index], ...normalized };
-    await persistRowUpdate('ppf_job_cards', 'job_id', jobId, {
+    ensurePersisted(await persistRowUpdate('ppf_job_cards', 'job_id', jobId, {
       ...normalized,
       completion_date: this.data.ppfJobCards[index].completion_date,
-    });
+    }));
     return this.data.ppfJobCards[index];
   }
 
@@ -641,7 +646,7 @@ class DataStore {
       ...updates,
     };
 
-    await persistRowUpdate('vehicle_documents', 'document_id', documentId, updates);
+    ensurePersisted(await persistRowUpdate('vehicle_documents', 'document_id', documentId, updates));
     return this.data.vehicleDocuments[index];
   }
 
