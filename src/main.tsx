@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
+import { DataProvider } from './contexts/DataContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import './index.css';
@@ -10,13 +11,15 @@ import './index.css';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <AuthProvider>
-        <ToastProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </ToastProvider>
-      </AuthProvider>
+      <DataProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </ToastProvider>
+        </AuthProvider>
+      </DataProvider>
     </ThemeProvider>
   </StrictMode>,
 );

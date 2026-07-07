@@ -1,15 +1,19 @@
 import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { EditableCard } from '@/components/ui/EditableCard';
+import { EditRecordModal } from '@/components/ui/EditRecordModal';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
+import { VEHICLE_EDIT_FIELDS } from '@/config/edit-fields';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
-import type { VehicleDocument } from '@/types';
+import type { VehicleDocument, VehicleStatus } from '@/types';
 import { VEHICLE_STATUS_CONFIG } from '@/utils/constants';
 import { formatCNIC, formatDate, formatPKR, cn } from '@/utils/format';
 import { PageTransition } from './PageTransition';
@@ -42,10 +46,14 @@ const DOCUMENT_CHECKLIST: {
 export function VehicleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const loading = usePageLoading();
-  const { success } = useToast();
-  const [, refresh] = useState(0);
+  const { user } = useAuth();
+  const { success, error } = useToast();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [editOpen, setEditOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const details = id ? store.getVehicleWithDetails(id) : null;
+  void refreshKey;
   const categories = store.getExpenseCategories();
 
   const expenseRows = useMemo(() => {
@@ -79,12 +87,52 @@ export function VehicleDetailPage() {
     return rows;
   }, [details, categories]);
 
-  const toggleDocument = (key: (typeof DOCUMENT_CHECKLIST)[number]['key']) => {
+  const toggleDocument = async (key: (typeof DOCUMENT_CHECKLIST)[number]['key']) => {
     if (!details?.document) return;
     const current = details.document[key];
-    store.updateVehicleDocument(details.document.document_id, { [key]: !current });
+    await store.updateVehicleDocument(details.document.document_id, { [key]: !current });
     success('Document updated', `${DOCUMENT_CHECKLIST.find((d) => d.key === key)?.label} marked ${!current ? 'received' : 'pending'}`);
-    refresh((n) => n + 1);
+    setRefreshKey((n) => n + 1);
+  };
+
+  const handleSaveVehicle = async (values: Record<string, string>) => {
+    if (!details) return;
+    setSaving(true);
+    try {
+      const updated = await store.updateVehicle(details.vehicle.vehicle_id, {
+        make: values.make.trim(),
+        model: values.model.trim(),
+        variant: values.variant.trim(),
+        model_year: Number(values.model_year),
+        registration_number: values.registration_number.trim(),
+        registration_city: values.registration_city.trim(),
+        color: values.color.trim(),
+        mileage: Number(values.mileage) || 0,
+        fuel_type: values.fuel_type.trim(),
+        transmission: values.transmission.trim(),
+        engine_number: values.engine_number.trim(),
+        chassis_number: values.chassis_number.trim(),
+        status: values.status as VehicleStatus,
+      });
+      if (!updated) {
+        error('Update failed', 'Could not save vehicle changes.');
+        return;
+      }
+      store.addAuditLog({
+        user_id: user?.user_id ?? 'usr_001',
+        action: 'UPDATE',
+        table_name: 'vehicles',
+        record_id: details.vehicle.vehicle_id,
+        ip_address: '127.0.0.1',
+      });
+      success('Vehicle updated', 'Vehicle details saved successfully.');
+      setEditOpen(false);
+      setRefreshKey((n) => n + 1);
+    } catch {
+      error('Update failed', 'An error occurred while saving.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -144,23 +192,18 @@ export function VehicleDetailPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card padding="md">
-          <CardHeader>
-            <CardTitle>Vehicle Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid gap-3 sm:grid-cols-2">
-              <DetailItem label="Registration" value={vehicle.registration_number} />
-              <DetailItem label="City" value={vehicle.registration_city} />
-              <DetailItem label="Color" value={vehicle.color} />
-              <DetailItem label="Mileage" value={`${vehicle.mileage.toLocaleString()} km`} />
-              <DetailItem label="Fuel" value={vehicle.fuel_type} />
-              <DetailItem label="Transmission" value={vehicle.transmission} />
-              <DetailItem label="Engine No." value={vehicle.engine_number} />
-              <DetailItem label="Chassis No." value={vehicle.chassis_number} />
-            </dl>
-          </CardContent>
-        </Card>
+        <EditableCard title="Vehicle Details" onEdit={() => setEditOpen(true)}>
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <DetailItem label="Registration" value={vehicle.registration_number} />
+            <DetailItem label="City" value={vehicle.registration_city} />
+            <DetailItem label="Color" value={vehicle.color} />
+            <DetailItem label="Mileage" value={`${vehicle.mileage.toLocaleString()} km`} />
+            <DetailItem label="Fuel" value={vehicle.fuel_type} />
+            <DetailItem label="Transmission" value={vehicle.transmission} />
+            <DetailItem label="Engine No." value={vehicle.engine_number} />
+            <DetailItem label="Chassis No." value={vehicle.chassis_number} />
+          </dl>
+        </EditableCard>
 
         <Card padding="md">
           <CardHeader>
@@ -306,6 +349,31 @@ export function VehicleDetailPage() {
           </div>
         </Card>
       </div>
+
+      <EditRecordModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="Edit vehicle"
+        description="Update vehicle specifications and status."
+        fields={VEHICLE_EDIT_FIELDS}
+        values={{
+          make: vehicle.make,
+          model: vehicle.model,
+          variant: vehicle.variant,
+          model_year: String(vehicle.model_year),
+          registration_number: vehicle.registration_number,
+          registration_city: vehicle.registration_city,
+          color: vehicle.color,
+          mileage: String(vehicle.mileage),
+          fuel_type: vehicle.fuel_type,
+          transmission: vehicle.transmission,
+          engine_number: vehicle.engine_number,
+          chassis_number: vehicle.chassis_number,
+          status: vehicle.status,
+        }}
+        onSave={handleSaveVehicle}
+        saving={saving}
+      />
     </PageTransition>
   );
 }

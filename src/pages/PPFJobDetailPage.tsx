@@ -1,12 +1,15 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { EditableCard } from '@/components/ui/EditableCard';
+import { EditRecordModal } from '@/components/ui/EditRecordModal';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
+import { PPF_CUSTOMER_EDIT_FIELDS, PPF_JOB_EDIT_FIELDS } from '@/config/edit-fields';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
@@ -59,6 +62,9 @@ export function PPFJobDetailPage() {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [updating, setUpdating] = useState(false);
+  const [editCustomerOpen, setEditCustomerOpen] = useState(false);
+  const [editJobOpen, setEditJobOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const details = useMemo(() => {
     void refreshKey;
@@ -101,6 +107,67 @@ export function PPFJobDetailPage() {
     },
     [jobId, user, success, error],
   );
+
+  const handleSaveCustomer = async (values: Record<string, string>) => {
+    if (!details?.customer) return;
+    setSaving(true);
+    try {
+      const updated = await store.updatePPFCustomer(details.customer.ppf_customer_id, {
+        full_name: values.full_name.trim(),
+        mobile: values.mobile.trim(),
+        whatsapp: values.whatsapp.trim(),
+        email: values.email.trim(),
+        address: values.address.trim(),
+        city: values.city.trim(),
+      });
+      if (!updated) {
+        error('Update failed', 'Could not save customer changes.');
+        return;
+      }
+      store.addAuditLog({
+        user_id: user?.user_id ?? 'usr_001',
+        action: 'UPDATE',
+        table_name: 'ppf_customers',
+        record_id: details.customer.ppf_customer_id,
+        ip_address: '127.0.0.1',
+      });
+      success('Customer updated', 'PPF customer details saved.');
+      setEditCustomerOpen(false);
+      setRefreshKey((k) => k + 1);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveJob = async (values: Record<string, string>) => {
+    if (!jobId) return;
+    setSaving(true);
+    try {
+      const updated = await store.updatePPFJob(jobId, {
+        installer_name: values.installer_name.trim(),
+        booked_date: values.booked_date,
+        completion_date: values.completion_date.trim() || null,
+        warranty_period: Number(values.warranty_period) || 12,
+        notes: values.notes.trim(),
+      });
+      if (!updated) {
+        error('Update failed', 'Could not save job changes.');
+        return;
+      }
+      store.addAuditLog({
+        user_id: user?.user_id ?? 'usr_001',
+        action: 'UPDATE',
+        table_name: 'ppf_job_cards',
+        record_id: jobId,
+        ip_address: '127.0.0.1',
+      });
+      success('Job updated', 'Job details saved successfully.');
+      setEditJobOpen(false);
+      setRefreshKey((k) => k + 1);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -197,28 +264,26 @@ export function PPFJobDetailPage() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Customer</CardTitle>
-            <CardDescription>PPF customer profile</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <dl className="space-y-3">
-              <DetailRow label="Name" value={customer?.full_name ?? '—'} />
-              <DetailRow label="Mobile" value={customer?.mobile ?? '—'} />
-              <DetailRow label="WhatsApp" value={customer?.whatsapp ?? '—'} />
-              <DetailRow label="Email" value={customer?.email || '—'} />
-              <DetailRow
-                label="Location"
-                value={
-                  customer?.city
-                    ? `${customer.address ? `${customer.address}, ` : ''}${customer.city}`
-                    : '—'
-                }
-              />
-            </dl>
-          </CardContent>
-        </Card>
+        <EditableCard
+          title="Customer"
+          subtitle="PPF customer profile"
+          onEdit={customer ? () => setEditCustomerOpen(true) : undefined}
+        >
+          <dl className="space-y-3">
+            <DetailRow label="Name" value={customer?.full_name ?? '—'} />
+            <DetailRow label="Mobile" value={customer?.mobile ?? '—'} />
+            <DetailRow label="WhatsApp" value={customer?.whatsapp ?? '—'} />
+            <DetailRow label="Email" value={customer?.email || '—'} />
+            <DetailRow
+              label="Location"
+              value={
+                customer?.city
+                  ? `${customer.address ? `${customer.address}, ` : ''}${customer.city}`
+                  : '—'
+              }
+            />
+          </dl>
+        </EditableCard>
 
         <Card>
           <CardHeader>
@@ -240,33 +305,31 @@ export function PPFJobDetailPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Package & Assignment</CardTitle>
-            <CardDescription>Service package and installer</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <dl className="space-y-3">
-              <DetailRow label="Package" value={pkg?.package_name ?? '—'} />
-              <DetailRow
-                label="Est. film usage"
-                value={pkg ? `${pkg.estimated_film_usage} m` : '—'}
-              />
-              <DetailRow
-                label="Est. labor"
-                value={pkg ? formatPKR(pkg.estimated_labor_cost) : '—'}
-              />
-              <DetailRow label="Installer" value={job.installer_name} />
-              <DetailRow label="Booked" value={formatDate(job.booked_date)} />
-              <DetailRow
-                label="Completed"
-                value={job.completion_date ? formatDate(job.completion_date) : 'Pending'}
-              />
-              <DetailRow label="Warranty period" value={`${job.warranty_period} years`} />
-              {job.notes && <DetailRow label="Notes" value={job.notes} />}
-            </dl>
-          </CardContent>
-        </Card>
+        <EditableCard
+          title="Package & Assignment"
+          subtitle="Service package and installer"
+          onEdit={() => setEditJobOpen(true)}
+        >
+          <dl className="space-y-3">
+            <DetailRow label="Package" value={pkg?.package_name ?? '—'} />
+            <DetailRow
+              label="Est. film usage"
+              value={pkg ? `${pkg.estimated_film_usage} m` : '—'}
+            />
+            <DetailRow
+              label="Est. labor"
+              value={pkg ? formatPKR(pkg.estimated_labor_cost) : '—'}
+            />
+            <DetailRow label="Installer" value={job.installer_name} />
+            <DetailRow label="Booked" value={formatDate(job.booked_date)} />
+            <DetailRow
+              label="Completed"
+              value={job.completion_date ? formatDate(job.completion_date) : 'Pending'}
+            />
+            <DetailRow label="Warranty period" value={`${job.warranty_period} years`} />
+            {job.notes && <DetailRow label="Notes" value={job.notes} />}
+          </dl>
+        </EditableCard>
 
         <Card>
           <CardHeader>
@@ -535,6 +598,41 @@ export function PPFJobDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {customer && (
+        <EditRecordModal
+          open={editCustomerOpen}
+          onClose={() => setEditCustomerOpen(false)}
+          title="Edit PPF customer"
+          fields={PPF_CUSTOMER_EDIT_FIELDS}
+          values={{
+            full_name: customer.full_name,
+            mobile: customer.mobile,
+            whatsapp: customer.whatsapp,
+            email: customer.email,
+            address: customer.address,
+            city: customer.city,
+          }}
+          onSave={handleSaveCustomer}
+          saving={saving}
+        />
+      )}
+
+      <EditRecordModal
+        open={editJobOpen}
+        onClose={() => setEditJobOpen(false)}
+        title="Edit job details"
+        fields={PPF_JOB_EDIT_FIELDS}
+        values={{
+          installer_name: job.installer_name,
+          booked_date: job.booked_date,
+          completion_date: job.completion_date ?? '',
+          warranty_period: String(job.warranty_period),
+          notes: job.notes,
+        }}
+        onSave={handleSaveJob}
+        saving={saving}
+      />
     </motion.div>
   );
 }

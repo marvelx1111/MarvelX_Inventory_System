@@ -1,9 +1,14 @@
 import { motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
+import { EditableCard } from '@/components/ui/EditableCard';
+import { EditRecordModal } from '@/components/ui/EditRecordModal';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
+import { INVESTOR_EDIT_FIELDS } from '@/config/edit-fields';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
 import { formatDate, formatPKR, getInitials } from '@/utils/format';
 import { PageTransition } from './PageTransition';
@@ -16,7 +21,13 @@ const MONTH_NAMES = [
 
 export function InvestorsPage() {
   const loading = usePageLoading();
+  const { user } = useAuth();
+  const { success, error } = useToast();
   const [selectedInvestorId, setSelectedInvestorId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [editOpen, setEditOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  void refreshKey;
 
   const investors = store.getInvestors();
   const investments = store.getInvestments();
@@ -41,6 +52,37 @@ export function InvestorsPage() {
   const totalInvested = investorInvestments.reduce((sum, inv) => sum + inv.amount, 0);
   const totalReturns = investorReturns.reduce((sum, r) => sum + r.return_amount, 0);
   const currentShare = investorInvestments.reduce((sum, inv) => sum + inv.percentage_share, 0);
+
+  const handleSaveInvestor = async (values: Record<string, string>) => {
+    if (!selectedInvestor) return;
+    setSaving(true);
+    try {
+      const updated = await store.updateInvestor(selectedInvestor.investor_id, {
+        full_name: values.full_name.trim(),
+        cnic: values.cnic.trim(),
+        mobile: values.mobile.trim(),
+        email: values.email.trim(),
+        address: values.address.trim(),
+        join_date: values.join_date,
+      });
+      if (!updated) {
+        error('Update failed', 'Could not save investor changes.');
+        return;
+      }
+      store.addAuditLog({
+        user_id: user?.user_id ?? 'usr_001',
+        action: 'UPDATE',
+        table_name: 'investors',
+        record_id: selectedInvestor.investor_id,
+        ip_address: '127.0.0.1',
+      });
+      success('Investor updated', 'Investor details saved successfully.');
+      setEditOpen(false);
+      setRefreshKey((k) => k + 1);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const allInvestmentsSummary = useMemo(() => {
     return investors.map((investor) => {
@@ -123,22 +165,20 @@ export function InvestorsPage() {
         <div className="space-y-6 lg:col-span-2">
           {selectedInvestor && (
             <>
-              <Card padding="md">
-                <CardHeader>
-                  <CardTitle>{selectedInvestor.full_name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <dl className="grid gap-3 sm:grid-cols-2">
-                    <Field label="CNIC" value={selectedInvestor.cnic} />
-                    <Field label="Mobile" value={selectedInvestor.mobile} />
-                    <Field label="Email" value={selectedInvestor.email || '—'} />
-                    <Field label="Joined" value={formatDate(selectedInvestor.join_date)} />
-                    <Field label="Total invested" value={formatPKR(totalInvested)} />
-                    <Field label="Share percentage" value={`${currentShare.toFixed(2)}%`} />
-                    <Field label="Total returns" value={formatPKR(totalReturns)} />
-                  </dl>
-                </CardContent>
-              </Card>
+              <EditableCard
+                title={selectedInvestor.full_name}
+                onEdit={() => setEditOpen(true)}
+              >
+                <dl className="grid gap-3 sm:grid-cols-2">
+                  <Field label="CNIC" value={selectedInvestor.cnic} />
+                  <Field label="Mobile" value={selectedInvestor.mobile} />
+                  <Field label="Email" value={selectedInvestor.email || '—'} />
+                  <Field label="Joined" value={formatDate(selectedInvestor.join_date)} />
+                  <Field label="Total invested" value={formatPKR(totalInvested)} />
+                  <Field label="Share percentage" value={`${currentShare.toFixed(2)}%`} />
+                  <Field label="Total returns" value={formatPKR(totalReturns)} />
+                </dl>
+              </EditableCard>
 
               <Card padding="none" className="overflow-hidden">
                 <CardHeader className="border-b border-[var(--border-secondary)] px-5 py-4">
@@ -251,6 +291,25 @@ export function InvestorsPage() {
           )}
         </div>
       </div>
+
+      {selectedInvestor && (
+        <EditRecordModal
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          title="Edit investor"
+          fields={INVESTOR_EDIT_FIELDS}
+          values={{
+            full_name: selectedInvestor.full_name,
+            cnic: selectedInvestor.cnic,
+            mobile: selectedInvestor.mobile,
+            email: selectedInvestor.email,
+            address: selectedInvestor.address,
+            join_date: selectedInvestor.join_date,
+          }}
+          onSave={handleSaveInvestor}
+          saving={saving}
+        />
+      )}
     </PageTransition>
   );
 }

@@ -1,6 +1,7 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDataSource } from '@/contexts/DataContext';
 import type { PermissionModule } from '@/types';
 import {
   AuditLogPage,
@@ -21,6 +22,21 @@ import { PPFJobDetailPage } from '@/pages/PPFJobDetailPage';
 import { PPFJobsPage } from '@/pages/PPFJobsPage';
 import { PPFRollsPage } from '@/pages/PPFRollsPage';
 import { UsersPage } from '@/pages/UsersPage';
+
+function DataReadyGate({ children }: { children: React.ReactNode }) {
+  const { status } = useDataSource();
+  if (status === 'loading') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)]">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          <p className="text-sm text-[var(--text-secondary)]">Loading Marvel X...</p>
+        </div>
+      </div>
+    );
+  }
+  return children;
+}
 
 function ProtectedRoute({ module }: { module?: PermissionModule }) {
   const { isAuthenticated, hasPermission } = useAuth();
@@ -44,7 +60,8 @@ function PublicRoute() {
 
 export default function App() {
   return (
-    <Routes>
+    <DataReadyGate>
+      <Routes>
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<LoginPage />} />
       </Route>
@@ -101,5 +118,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </DataReadyGate>
   );
 }

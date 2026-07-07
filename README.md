@@ -42,9 +42,22 @@ Open [http://localhost:5173](http://localhost:5173)
 - **Global search** — `Ctrl+K` / `⌘K` command palette
 - **Dark mode** — Toggle in sidebar
 
-## Build
+## Supabase
+
+The app connects to Supabase when `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set in `.env.local`. On startup it hydrates the in-memory store from the database; if Supabase is empty or unreachable, it falls back to local seed data.
 
 ```bash
-npm run build
-npm run preview
+# Copy and fill credentials
+cp .env.example .env.local
+
+# Seed database from mock data
+npm run db:seed
+
+# Run cross-check loops (row counts + FK integrity)
+npm run db:crosscheck
 ```
+
+**Also add env vars to Vercel** for production deployment.
+
+Schema migrations live in `supabase/migrations/`.
+

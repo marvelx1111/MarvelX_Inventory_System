@@ -1,0 +1,24 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { getViteSupabaseEnv } from './env';
+
+let browserClient: SupabaseClient | null = null;
+
+export function isSupabaseConfigured(): boolean {
+  return getViteSupabaseEnv().isConfigured;
+}
+
+export function getSupabaseBrowserClient(): SupabaseClient | null {
+  const { url, anonKey, isConfigured } = getViteSupabaseEnv();
+  if (!isConfigured) return null;
+
+  if (!browserClient) {
+    browserClient = createClient(url, anonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+  }
+
+  return browserClient;
+}

@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { EditableCard } from '@/components/ui/EditableCard';
+import { EditRecordModal } from '@/components/ui/EditRecordModal';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -9,6 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
+import { DELIVERY_EDIT_FIELDS, SALE_EDIT_FIELDS } from '@/config/edit-fields';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
@@ -29,9 +32,13 @@ export function SaleDetailPage() {
   const loading = usePageLoading();
   const { user } = useAuth();
   const { success, error } = useToast();
-  const [, refresh] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [editSaleOpen, setEditSaleOpen] = useState(false);
+  const [editDeliveryOpen, setEditDeliveryOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const sale = id ? store.getSaleById(id) : undefined;
+  void refreshKey;
   const vehicle = sale ? store.getVehicleById(sale.vehicle_id) : undefined;
   const customer = sale ? store.getCustomerById(sale.customer_id) : undefined;
   const payments = sale
@@ -91,8 +98,83 @@ export function SaleDetailPage() {
         notes: '',
       });
       setSubmitting(false);
-      refresh((n) => n + 1);
+      setRefreshKey((n) => n + 1);
     }, 300);
+  };
+
+  const handleSaveSale = async (values: Record<string, string>) => {
+    if (!sale) return;
+    setSaving(true);
+    try {
+      const updated = await store.updateSale(sale.sale_id, {
+        sale_date: values.sale_date,
+        sale_price: Number(values.sale_price),
+        discount: Number(values.discount) || 0,
+        advance: Number(values.advance) || 0,
+        salesperson: values.salesperson.trim(),
+        payment_method: values.payment_method as PaymentMethod,
+      });
+      if (!updated) {
+        error('Update failed', 'Could not save sale changes.');
+        return;
+      }
+      store.addAuditLog({
+        user_id: user?.user_id ?? 'usr_001',
+        action: 'UPDATE',
+        table_name: 'sales',
+        record_id: sale.sale_id,
+        ip_address: '127.0.0.1',
+      });
+      success('Sale updated', 'Sale details saved successfully.');
+      setEditSaleOpen(false);
+      setRefreshKey((n) => n + 1);
+    } catch {
+      error('Update failed', 'An error occurred while saving.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveDelivery = async (values: Record<string, string>) => {
+    if (!sale) return;
+    setSaving(true);
+    try {
+      if (delivery) {
+        const updated = await store.updateDeliveryRecord(delivery.delivery_id, {
+          delivery_date: values.delivery_date,
+          delivered_by: values.delivered_by.trim(),
+          receiver_name: values.receiver_name.trim(),
+          receiver_cnic: values.receiver_cnic.trim(),
+          remarks: values.remarks.trim(),
+        });
+        if (!updated) {
+          error('Update failed', 'Could not save delivery record.');
+          return;
+        }
+      } else {
+        await store.createDeliveryRecord(sale.sale_id, {
+          delivery_date: values.delivery_date,
+          delivered_by: values.delivered_by.trim(),
+          receiver_name: values.receiver_name.trim(),
+          receiver_cnic: values.receiver_cnic.trim(),
+          remarks: values.remarks.trim(),
+        });
+      }
+      store.addAuditLog({
+        user_id: user?.user_id ?? 'usr_001',
+        action: delivery ? 'UPDATE' : 'CREATE',
+        table_name: 'delivery_records',
+        record_id: sale.sale_id,
+        ip_address: '127.0.0.1',
+      });
+      success('Delivery saved', 'Delivery record updated successfully.');
+      setEditDeliveryOpen(false);
+      setRefreshKey((n) => n + 1);
+    } catch {
+      error('Update failed', 'An error occurred while saving.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const sortedPayments = [...payments].sort(
@@ -148,12 +230,8 @@ export function SaleDetailPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card padding="md" className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Sale Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid gap-4 sm:grid-cols-2">
+        <EditableCard title="Sale Details" onEdit={() => setEditSaleOpen(true)} className="lg:col-span-2">
+          <dl className="grid gap-4 sm:grid-cols-2">
               <InfoItem label="Sale date" value={formatDate(sale.sale_date)} />
               <InfoItem label="Salesperson" value={sale.salesperson} />
               <InfoItem label="Sale price" value={formatPKR(sale.sale_price)} />
@@ -180,8 +258,7 @@ export function SaleDetailPage() {
                 </p>
               </div>
             )}
-          </CardContent>
-        </Card>
+        </EditableCard>
 
         <Card padding="md">
           <CardHeader>
@@ -287,31 +364,64 @@ export function SaleDetailPage() {
           </Card>
         )}
 
-        <Card padding="md" className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Delivery Record</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {delivery ? (
-              <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <InfoItem label="Delivery date" value={formatDate(delivery.delivery_date)} />
-                <InfoItem label="Delivered by" value={delivery.delivered_by} />
-                <InfoItem label="Receiver" value={delivery.receiver_name} />
-                <InfoItem label="Receiver CNIC" value={formatCNIC(delivery.receiver_cnic)} />
-                {delivery.remarks && (
-                  <div className="sm:col-span-2">
-                    <InfoItem label="Remarks" value={delivery.remarks} />
-                  </div>
-                )}
-              </dl>
-            ) : (
-              <p className="text-sm text-[var(--text-tertiary)]">
-                No delivery record on file. Delivery is recorded when the vehicle is handed over to the buyer.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <EditableCard
+          title="Delivery Record"
+          onEdit={() => setEditDeliveryOpen(true)}
+          editLabel={delivery ? 'Edit' : 'Add'}
+          className="lg:col-span-3"
+        >
+          {delivery ? (
+            <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <InfoItem label="Delivery date" value={formatDate(delivery.delivery_date)} />
+              <InfoItem label="Delivered by" value={delivery.delivered_by} />
+              <InfoItem label="Receiver" value={delivery.receiver_name} />
+              <InfoItem label="Receiver CNIC" value={formatCNIC(delivery.receiver_cnic)} />
+              {delivery.remarks && (
+                <div className="sm:col-span-2">
+                  <InfoItem label="Remarks" value={delivery.remarks} />
+                </div>
+              )}
+            </dl>
+          ) : (
+            <p className="text-sm text-[var(--text-tertiary)]">
+              No delivery record on file. Click Add to record vehicle handover.
+            </p>
+          )}
+        </EditableCard>
       </div>
+
+      <EditRecordModal
+        open={editSaleOpen}
+        onClose={() => setEditSaleOpen(false)}
+        title="Edit sale"
+        fields={SALE_EDIT_FIELDS}
+        values={{
+          sale_date: sale.sale_date,
+          sale_price: String(sale.sale_price),
+          discount: String(sale.discount),
+          advance: String(sale.advance),
+          salesperson: sale.salesperson,
+          payment_method: sale.payment_method,
+        }}
+        onSave={handleSaveSale}
+        saving={saving}
+      />
+
+      <EditRecordModal
+        open={editDeliveryOpen}
+        onClose={() => setEditDeliveryOpen(false)}
+        title={delivery ? 'Edit delivery record' : 'Add delivery record'}
+        fields={DELIVERY_EDIT_FIELDS}
+        values={{
+          delivery_date: delivery?.delivery_date ?? new Date().toISOString().slice(0, 10),
+          delivered_by: delivery?.delivered_by ?? user?.full_name ?? '',
+          receiver_name: delivery?.receiver_name ?? customer?.full_name ?? '',
+          receiver_cnic: delivery?.receiver_cnic ?? customer?.cnic ?? '',
+          remarks: delivery?.remarks ?? '',
+        }}
+        onSave={handleSaveDelivery}
+        saving={saving}
+      />
     </PageTransition>
   );
 }

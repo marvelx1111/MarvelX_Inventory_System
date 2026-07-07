@@ -7,14 +7,20 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db:seed": "tsx scripts/supabase-seed.ts",
+    "db:crosscheck": "tsx scripts/supabase-crosscheck.ts",
+    "db:edit-check": "tsx scripts/edit-system-loop.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.1",
+    "dotenv": "^17.4.2",
     "framer-motion": "^12.42.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.6.3",
-    "recharts": "^3.0.2"
+    "recharts": "^3.0.2",
+    "tsx": "^4.23.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

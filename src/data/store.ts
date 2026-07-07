@@ -1,4 +1,5 @@
 import { createSeedData } from '@/data/seed';
+import { persistRowInsert, persistRowUpdate } from '@/data/supabase-sync';
 import type {
   AppData,
   AuditLog,
@@ -131,6 +132,15 @@ class DataStore {
   constructor() {
     this.data = createSeedData();
     this.idCounters = this.buildIdCounters();
+  }
+
+  hydrate(data: AppData): void {
+    this.data = data;
+    this.idCounters = this.buildIdCounters();
+  }
+
+  isHydratedFromSupabase(): boolean {
+    return this.data.roles.length > 0 && this.data.vehicles.length > 0;
   }
 
   private buildIdCounters(): Record<string, number> {
@@ -400,21 +410,6 @@ class DataStore {
     return { purchase, vehicle, document };
   }
 
-  updateVehicleDocument(
-    documentId: string,
-    updates: Partial<Omit<VehicleDocument, 'document_id' | 'vehicle_id'>>,
-  ): VehicleDocument | null {
-    const index = this.data.vehicleDocuments.findIndex((d) => d.document_id === documentId);
-    if (index === -1) return null;
-
-    this.data.vehicleDocuments[index] = {
-      ...this.data.vehicleDocuments[index],
-      ...updates,
-    };
-
-    return this.data.vehicleDocuments[index];
-  }
-
   createSale(input: CreateSaleInput): Sale | null {
     const vehicle = this.data.vehicles.find((v) => v.vehicle_id === input.vehicle_id);
     const customer = this.data.customers.find((c) => c.customer_id === input.customer_id);
@@ -487,6 +482,167 @@ class DataStore {
 
     this.data.customers.push(customer);
     return customer;
+  }
+
+  async updateCustomer(
+    customerId: string,
+    updates: Partial<Omit<Customer, 'customer_id' | 'created_at'>>,
+  ): Promise<Customer | null> {
+    const index = this.data.customers.findIndex((c) => c.customer_id === customerId);
+    if (index === -1) return null;
+
+    this.data.customers[index] = { ...this.data.customers[index], ...updates };
+    const customer = this.data.customers[index];
+
+    await persistRowUpdate('customers', 'customer_id', customerId, updates);
+    return customer;
+  }
+
+  async updateVehicle(
+    vehicleId: string,
+    updates: Partial<Omit<Vehicle, 'vehicle_id' | 'purchase_id' | 'stock_number'>>,
+  ): Promise<Vehicle | null> {
+    const index = this.data.vehicles.findIndex((v) => v.vehicle_id === vehicleId);
+    if (index === -1) return null;
+
+    const normalized = { ...updates };
+    if (normalized.model_year !== undefined) normalized.model_year = Number(normalized.model_year);
+    if (normalized.mileage !== undefined) normalized.mileage = Number(normalized.mileage);
+    if (normalized.purchase_price !== undefined) normalized.purchase_price = Number(normalized.purchase_price);
+    if (normalized.total_cost !== undefined) normalized.total_cost = Number(normalized.total_cost);
+
+    this.data.vehicles[index] = { ...this.data.vehicles[index], ...normalized };
+    await persistRowUpdate('vehicles', 'vehicle_id', vehicleId, normalized);
+    return this.data.vehicles[index];
+  }
+
+  async updateSale(
+    saleId: string,
+    updates: Partial<Omit<Sale, 'sale_id' | 'vehicle_id' | 'customer_id'>>,
+  ): Promise<Sale | null> {
+    const index = this.data.sales.findIndex((s) => s.sale_id === saleId);
+    if (index === -1) return null;
+
+    const normalized = { ...updates };
+    if (normalized.sale_price !== undefined) normalized.sale_price = Number(normalized.sale_price);
+    if (normalized.discount !== undefined) normalized.discount = Number(normalized.discount);
+    if (normalized.advance !== undefined) normalized.advance = Number(normalized.advance);
+    if (normalized.balance !== undefined) normalized.balance = Number(normalized.balance);
+    if (normalized.profit !== undefined) normalized.profit = Number(normalized.profit);
+
+    const sale = { ...this.data.sales[index], ...normalized };
+    if (updates.sale_price !== undefined || updates.discount !== undefined) {
+      const vehicle = this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id);
+      if (vehicle && updates.sale_price !== undefined) {
+        sale.profit = sale.sale_price - sale.discount - vehicle.total_cost;
+      }
+    }
+    if (updates.sale_price !== undefined || updates.discount !== undefined || updates.advance !== undefined) {
+      const net = sale.sale_price - sale.discount;
+      const paid = this.data.salePayments
+        .filter((p) => p.sale_id === saleId)
+        .reduce((sum, p) => sum + p.amount, 0);
+      sale.balance = Math.max(0, net - paid);
+    }
+
+    this.data.sales[index] = sale;
+    await persistRowUpdate('sales', 'sale_id', saleId, {
+      sale_date: sale.sale_date,
+      sale_price: sale.sale_price,
+      discount: sale.discount,
+      advance: sale.advance,
+      balance: sale.balance,
+      payment_method: sale.payment_method,
+      salesperson: sale.salesperson,
+      profit: sale.profit,
+    });
+    return sale;
+  }
+
+  async updateDeliveryRecord(
+    deliveryId: string,
+    updates: Partial<Omit<DeliveryRecord, 'delivery_id' | 'sale_id'>>,
+  ): Promise<DeliveryRecord | null> {
+    const index = this.data.deliveryRecords.findIndex((d) => d.delivery_id === deliveryId);
+    if (index === -1) return null;
+
+    this.data.deliveryRecords[index] = { ...this.data.deliveryRecords[index], ...updates };
+    await persistRowUpdate('delivery_records', 'delivery_id', deliveryId, updates);
+    return this.data.deliveryRecords[index];
+  }
+
+  async createDeliveryRecord(
+    saleId: string,
+    input: Omit<DeliveryRecord, 'delivery_id' | 'sale_id'>,
+  ): Promise<DeliveryRecord> {
+    const record: DeliveryRecord = {
+      delivery_id: this.nextId('del'),
+      sale_id: saleId,
+      ...input,
+    };
+    this.data.deliveryRecords.push(record);
+    await persistRowInsert('delivery_records', record as unknown as Record<string, unknown>);
+    return record;
+  }
+
+  async updateInvestor(
+    investorId: string,
+    updates: Partial<Omit<Investor, 'investor_id'>>,
+  ): Promise<Investor | null> {
+    const index = this.data.investors.findIndex((i) => i.investor_id === investorId);
+    if (index === -1) return null;
+
+    this.data.investors[index] = { ...this.data.investors[index], ...updates };
+    await persistRowUpdate('investors', 'investor_id', investorId, updates);
+    return this.data.investors[index];
+  }
+
+  async updatePPFCustomer(
+    ppfCustomerId: string,
+    updates: Partial<Omit<PPFCustomer, 'ppf_customer_id'>>,
+  ): Promise<PPFCustomer | null> {
+    const index = this.data.ppfCustomers.findIndex((c) => c.ppf_customer_id === ppfCustomerId);
+    if (index === -1) return null;
+
+    this.data.ppfCustomers[index] = { ...this.data.ppfCustomers[index], ...updates };
+    await persistRowUpdate('ppf_customers', 'ppf_customer_id', ppfCustomerId, updates);
+    return this.data.ppfCustomers[index];
+  }
+
+  async updatePPFJob(
+    jobId: string,
+    updates: Partial<Omit<PPFJobCard, 'job_id'>>,
+  ): Promise<PPFJobCard | null> {
+    const index = this.data.ppfJobCards.findIndex((j) => j.job_id === jobId);
+    if (index === -1) return null;
+
+    const normalized = { ...updates };
+    if (normalized.warranty_period !== undefined) {
+      normalized.warranty_period = Number(normalized.warranty_period);
+    }
+
+    this.data.ppfJobCards[index] = { ...this.data.ppfJobCards[index], ...normalized };
+    await persistRowUpdate('ppf_job_cards', 'job_id', jobId, {
+      ...normalized,
+      completion_date: this.data.ppfJobCards[index].completion_date,
+    });
+    return this.data.ppfJobCards[index];
+  }
+
+  async updateVehicleDocument(
+    documentId: string,
+    updates: Partial<Omit<VehicleDocument, 'document_id' | 'vehicle_id'>>,
+  ): Promise<VehicleDocument | null> {
+    const index = this.data.vehicleDocuments.findIndex((d) => d.document_id === documentId);
+    if (index === -1) return null;
+
+    this.data.vehicleDocuments[index] = {
+      ...this.data.vehicleDocuments[index],
+      ...updates,
+    };
+
+    await persistRowUpdate('vehicle_documents', 'document_id', documentId, updates);
+    return this.data.vehicleDocuments[index];
   }
 
   updatePPFJobStatus(jobId: string, status: PPFJobCard['status']): PPFJobCard | null {

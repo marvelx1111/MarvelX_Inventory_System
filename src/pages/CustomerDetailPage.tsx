@@ -1,11 +1,17 @@
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { EditableCard } from '@/components/ui/EditableCard';
+import { EditRecordModal } from '@/components/ui/EditRecordModal';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
+import { CUSTOMER_EDIT_FIELDS, customerToFormValues } from '@/config/edit-fields';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
 import type { CustomerType } from '@/types';
 import { formatCNIC, formatDate, formatPKR, getInitials } from '@/utils/format';
@@ -21,8 +27,50 @@ const TYPE_LABEL: Record<CustomerType, string> = {
 export function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const loading = usePageLoading();
+  const { user } = useAuth();
+  const { success, error } = useToast();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [editOpen, setEditOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const profile = id ? store.getCustomerProfile(id) : null;
+  void refreshKey;
+
+  const handleSave = async (values: Record<string, string>) => {
+    if (!profile) return;
+    setSaving(true);
+    try {
+      const updated = await store.updateCustomer(profile.customer.customer_id, {
+        full_name: values.full_name.trim(),
+        customer_type: values.customer_type as CustomerType,
+        cnic: values.cnic.trim(),
+        mobile: values.mobile.trim(),
+        whatsapp: values.whatsapp.trim(),
+        email: values.email.trim(),
+        address: values.address.trim(),
+        city: values.city.trim(),
+        remarks: values.remarks.trim(),
+      });
+      if (!updated) {
+        error('Update failed', 'Could not save customer changes.');
+        return;
+      }
+      store.addAuditLog({
+        user_id: user?.user_id ?? 'usr_001',
+        action: 'UPDATE',
+        table_name: 'customers',
+        record_id: profile.customer.customer_id,
+        ip_address: '127.0.0.1',
+      });
+      success('Customer updated', 'Contact information saved successfully.');
+      setEditOpen(false);
+      setRefreshKey((k) => k + 1);
+    } catch {
+      error('Update failed', 'An error occurred while saving.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -76,28 +124,26 @@ export function CustomerDetailPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card padding="md">
-          <CardHeader>
-            <CardTitle>Contact Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="space-y-3">
-              <ProfileField label="CNIC" value={formatCNIC(customer.cnic)} />
-              <ProfileField label="Mobile" value={customer.mobile} />
-              <ProfileField label="WhatsApp" value={customer.whatsapp || '—'} />
-              <ProfileField label="Email" value={customer.email || '—'} />
-              <ProfileField label="Address" value={customer.address || '—'} />
-              <ProfileField label="Member since" value={formatDate(customer.created_at)} />
-              {customer.remarks && <ProfileField label="Remarks" value={customer.remarks} />}
-            </dl>
-          </CardContent>
-        </Card>
+        <EditableCard
+          title="Contact Information"
+          onEdit={() => setEditOpen(true)}
+        >
+          <dl className="space-y-3">
+            <ProfileField label="CNIC" value={formatCNIC(customer.cnic) || '—'} />
+            <ProfileField label="Mobile" value={customer.mobile || '—'} />
+            <ProfileField label="WhatsApp" value={customer.whatsapp || '—'} />
+            <ProfileField label="Email" value={customer.email || '—'} />
+            <ProfileField label="Address" value={customer.address || '—'} />
+            <ProfileField label="Member since" value={formatDate(customer.created_at)} />
+            {customer.remarks && <ProfileField label="Remarks" value={customer.remarks} />}
+          </dl>
+        </EditableCard>
 
         <Card padding="none" className="overflow-hidden">
-          <CardHeader className="border-b border-[var(--border-secondary)] px-5 py-4">
-            <CardTitle>Sales History</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+          <div className="border-b border-[var(--border-secondary)] px-5 py-4">
+            <h3 className="font-semibold text-[var(--text-primary)]">Sales History</h3>
+          </div>
+          <div className="p-0">
             {sales.length === 0 ? (
               <p className="px-5 py-8 text-center text-sm text-[var(--text-tertiary)]">
                 No purchases from showroom
@@ -143,14 +189,14 @@ export function CustomerDetailPage() {
                 })}
               </ul>
             )}
-          </CardContent>
+          </div>
         </Card>
 
         <Card padding="none" className="overflow-hidden lg:col-span-2">
-          <CardHeader className="border-b border-[var(--border-secondary)] px-5 py-4">
-            <CardTitle>Vehicles Sold to Showroom</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+          <div className="border-b border-[var(--border-secondary)] px-5 py-4">
+            <h3 className="font-semibold text-[var(--text-primary)]">Vehicles Sold to Showroom</h3>
+          </div>
+          <div className="p-0">
             {purchasesAsSeller.length === 0 ? (
               <p className="px-5 py-8 text-center text-sm text-[var(--text-tertiary)]">
                 No vehicles sold to the showroom
@@ -188,9 +234,20 @@ export function CustomerDetailPage() {
                 })}
               </ul>
             )}
-          </CardContent>
+          </div>
         </Card>
       </div>
+
+      <EditRecordModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="Edit customer"
+        description="Update contact details for this customer."
+        fields={CUSTOMER_EDIT_FIELDS}
+        values={customerToFormValues(customer)}
+        onSave={handleSave}
+        saving={saving}
+      />
     </PageTransition>
   );
 }

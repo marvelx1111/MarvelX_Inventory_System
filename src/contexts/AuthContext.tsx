@@ -8,13 +8,16 @@ import {
   type ReactNode,
 } from 'react';
 import { store } from '@/data/store';
+import { useDataSource } from '@/contexts/DataContext';
 import type { PermissionModule, User } from '@/types';
 
 const SESSION_KEY = 'marvel-x-session';
+export const ADMIN_ROLE_ID = 'rol_001';
 
 interface AuthContextValue {
   user: User | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   login: (username: string, password: string) => boolean;
   logout: () => void;
   hasPermission: (module: PermissionModule) => boolean;
@@ -31,17 +34,21 @@ function loadSessionUserId(): string | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { status: dataStatus } = useDataSource();
   const [sessionUserId, setSessionUserId] = useState<string | null>(() => loadSessionUserId());
 
+  // Re-resolve user & permissions when Supabase hydration completes
   const user = useMemo(() => {
     if (!sessionUserId) return null;
     return store.getUsers().find((u) => u.user_id === sessionUserId) ?? null;
-  }, [sessionUserId]);
+  }, [sessionUserId, dataStatus]);
 
   const permissions = useMemo(
     () => (user ? new Set(store.getUserPermissions(user.user_id)) : new Set<string>()),
-    [user],
+    [user, dataStatus],
   );
+
+  const isAdmin = user?.role_id === ADMIN_ROLE_ID;
 
   const login = useCallback((username: string, password: string): boolean => {
     const authenticated = store.authenticate(username, password);
@@ -57,19 +64,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const hasPermission = useCallback(
-    (module: PermissionModule): boolean => permissions.has(module),
-    [permissions],
+    (module: PermissionModule): boolean => isAdmin || permissions.has(module),
+    [isAdmin, permissions],
   );
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       isAuthenticated: user !== null,
+      isAdmin,
       login,
       logout,
       hasPermission,
     }),
-    [user, login, logout, hasPermission],
+    [user, isAdmin, login, logout, hasPermission],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
