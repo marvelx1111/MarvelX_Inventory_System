@@ -18,6 +18,7 @@ interface AuthContextValue {
   user: User | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  canEdit: boolean;
   login: (username: string, password: string) => boolean;
   logout: () => void;
   hasPermission: (module: PermissionModule) => boolean;
@@ -34,26 +35,41 @@ function loadSessionUserId(): string | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { status: dataStatus } = useDataSource();
+  const { status: dataStatus, source } = useDataSource();
   const [sessionUserId, setSessionUserId] = useState<string | null>(() => loadSessionUserId());
+  const [authEpoch, setAuthEpoch] = useState(0);
 
   // Re-resolve user & permissions when Supabase hydration completes
   const user = useMemo(() => {
     if (!sessionUserId) return null;
     return store.getUsers().find((u) => u.user_id === sessionUserId) ?? null;
-  }, [sessionUserId, dataStatus]);
+  }, [sessionUserId, dataStatus, source, authEpoch]);
 
   const permissions = useMemo(
     () => (user ? new Set(store.getUserPermissions(user.user_id)) : new Set<string>()),
-    [user, dataStatus],
+    [user, dataStatus, source, authEpoch],
   );
 
-  const isAdmin = user?.role_id === ADMIN_ROLE_ID;
+  const isAdmin = useMemo(() => {
+    if (!user) return false;
+    if (user.role_id === ADMIN_ROLE_ID) return true;
+    const role = store.getRoles().find((r) => r.role_id === user.role_id);
+    return role?.role_name === 'Admin';
+  }, [user, dataStatus, source, authEpoch]);
+
+  const canEdit = isAdmin || permissions.has('users');
+
+  useEffect(() => {
+    if (dataStatus === 'ready') {
+      setAuthEpoch((n) => n + 1);
+    }
+  }, [dataStatus, source]);
 
   const login = useCallback((username: string, password: string): boolean => {
     const authenticated = store.authenticate(username, password);
     if (!authenticated) return false;
     setSessionUserId(authenticated.user_id);
+    setAuthEpoch((n) => n + 1);
     localStorage.setItem(SESSION_KEY, authenticated.user_id);
     return true;
   }, []);
@@ -73,11 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: user !== null,
       isAdmin,
+      canEdit,
       login,
       logout,
       hasPermission,
     }),
-    [user, isAdmin, login, logout, hasPermission],
+    [user, isAdmin, canEdit, login, logout, hasPermission],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

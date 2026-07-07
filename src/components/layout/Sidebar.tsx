@@ -12,7 +12,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
-  const { user, hasPermission, logout } = useAuth();
+  const { user, hasPermission, logout, isAdmin, canEdit } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   const visibleItems = NAV_ITEMS.filter((item) => hasPermission(item.module));
@@ -100,7 +100,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 <p className="truncate text-sm font-medium text-[var(--text-primary)]">
                   {user.full_name}
                 </p>
-                <p className="truncate text-xs text-[var(--text-tertiary)]">@{user.username}</p>
+                <p className="truncate text-xs text-[var(--text-tertiary)]">
+                  @{user.username}
+                  {isAdmin ? ' · Admin' : canEdit ? ' · Can edit' : ' · View only'}
+                </p>
               </div>
             </div>
           )}

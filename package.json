@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "db:seed": "tsx scripts/supabase-seed.ts",
     "db:crosscheck": "tsx scripts/supabase-crosscheck.ts",
-    "db:edit-check": "tsx scripts/edit-system-loop.ts"
+    "db:edit-check": "tsx scripts/edit-system-loop.ts",
+    "ui:edit-check": "tsx scripts/ui-edit-loop.ts",
+    "ui:edit-check:prod": "tsx scripts/ui-edit-loop.ts https://marvelx-inventory-system.vercel.app"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.1",
@@ -33,6 +35,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.2.0",
+    "playwright": "^1.49.0",
     "tailwindcss": "^4.1.11",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.34.1",

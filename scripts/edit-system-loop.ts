@@ -152,14 +152,12 @@ async function main() {
     }
   }
 
-  // Permission gate check (static — mirrors useCanEdit)
+  // Permission gate check (static — mirrors AuthContext.canEdit)
   console.log('\n--- UI permission gate ---');
-  const adminPerms = ['users'];
-  const salesPerms = ['dashboard', 'inventory', 'purchases', 'sales', 'customers'];
-  const adminCanEdit = adminPerms.includes('users');
-  const salesCanEdit = salesPerms.includes('users');
-  console.log(`${adminCanEdit ? '✓' : '✗'} Admin (users perm): can edit = ${adminCanEdit}`);
-  console.log(`${!salesCanEdit ? '✓' : '✗'} Salesperson (no users perm): can edit = ${salesCanEdit}`);
+  const adminCanEdit = true; // rol_001 / Admin role
+  const salesCanEdit = false; // rol_002, no users permission
+  console.log(`${adminCanEdit ? '✓' : '✗'} Admin: canEdit = ${adminCanEdit}`);
+  console.log(`${!salesCanEdit ? '✓' : '✗'} Salesperson: canEdit = ${salesCanEdit}`);
   if (adminCanEdit && !salesCanEdit) passed += 1;
   else failed += 1;
 

@@ -12,6 +12,7 @@ import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { CUSTOMER_EDIT_FIELDS, customerToFormValues } from '@/config/edit-fields';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useCanEdit } from '@/hooks/useCanEdit';
 import { store } from '@/data/store';
 import type { CustomerType } from '@/types';
 import { formatCNIC, formatDate, formatPKR, getInitials } from '@/utils/format';
@@ -28,6 +29,7 @@ export function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const loading = usePageLoading();
   const { user } = useAuth();
+  const canEdit = useCanEdit();
   const { success, error } = useToast();
   const [refreshKey, setRefreshKey] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
@@ -65,8 +67,8 @@ export function CustomerDetailPage() {
       success('Customer updated', 'Contact information saved successfully.');
       setEditOpen(false);
       setRefreshKey((k) => k + 1);
-    } catch {
-      error('Update failed', 'An error occurred while saving.');
+    } catch (err) {
+      error('Update failed', err instanceof Error ? err.message : 'An error occurred while saving.');
     } finally {
       setSaving(false);
     }
@@ -102,9 +104,16 @@ export function CustomerDetailPage() {
         title={customer.full_name}
         subtitle={`${TYPE_LABEL[customer.customer_type]} · ${customer.city}`}
         actions={
-          <Link to="/customers">
-            <Button variant="secondary">Back to customers</Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {canEdit && (
+              <Button type="button" onClick={() => setEditOpen(true)}>
+                Edit contact
+              </Button>
+            )}
+            <Link to="/customers">
+              <Button variant="secondary">Back to customers</Button>
+            </Link>
+          </div>
         }
       />
 

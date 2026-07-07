@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 
-/** Admin can edit any record. */
+/** Admin (or users-module permission) can edit records. */
 export function useCanEdit(): boolean {
-  const { isAuthenticated, isAdmin } = useAuth();
-  return isAuthenticated && isAdmin;
+  const { isAuthenticated, canEdit } = useAuth();
+  return isAuthenticated && canEdit;
 }

@@ -38,6 +38,7 @@ export function EditableCard({
           </div>
           {canEdit && onEdit && (
             <Button
+              type="button"
               variant="secondary"
               size="sm"
               className="shrink-0 border-accent/30 text-accent hover:bg-accent/10"
