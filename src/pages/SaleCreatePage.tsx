@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Textarea } from '@/components/ui/Textarea';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -269,9 +270,10 @@ export function SaleCreatePage() {
                       onChange={(e) => setNewCustomer((p) => ({ ...p, mobile: e.target.value }))}
                     />
                     <Input
-                      label="City"
-                      value={newCustomer.city}
-                      onChange={(e) => setNewCustomer((p) => ({ ...p, city: e.target.value }))}
+                      label="WhatsApp"
+                      type="tel"
+                      value={newCustomer.whatsapp}
+                      onChange={(e) => setNewCustomer((p) => ({ ...p, whatsapp: e.target.value }))}
                     />
                     <Input
                       label="Email"
@@ -279,6 +281,19 @@ export function SaleCreatePage() {
                       value={newCustomer.email}
                       onChange={(e) => setNewCustomer((p) => ({ ...p, email: e.target.value }))}
                     />
+                    <Input
+                      label="City"
+                      value={newCustomer.city}
+                      onChange={(e) => setNewCustomer((p) => ({ ...p, city: e.target.value }))}
+                    />
+                    <div className="sm:col-span-2">
+                      <Textarea
+                        label="Address"
+                        rows={2}
+                        value={newCustomer.address}
+                        onChange={(e) => setNewCustomer((p) => ({ ...p, address: e.target.value }))}
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="grid gap-2 sm:grid-cols-2">
