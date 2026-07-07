@@ -5,19 +5,15 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { EditRecordModal } from '@/components/ui/EditRecordModal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { Textarea } from '@/components/ui/Textarea';
 import { SkeletonCard } from '@/components/ui/Skeleton';
-import {
-  CUSTOMER_CREATE_DEFAULT_VALUES,
-  CUSTOMER_EDIT_FIELDS,
-  parseCustomerFormValues,
-} from '@/config/edit-fields';
+import { parseCustomerFormValues } from '@/config/edit-fields';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
-import type { PaymentMethod } from '@/types';
+import type { CustomerType, PaymentMethod } from '@/types';
 import { formatPKR } from '@/utils/format';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
@@ -31,6 +27,24 @@ const PAYMENT_OPTIONS = [
   { value: 'online', label: 'Online' },
 ];
 
+const CUSTOMER_TYPE_OPTIONS = [
+  { value: 'individual', label: 'Individual' },
+  { value: 'dealer', label: 'Dealer' },
+  { value: 'corporate', label: 'Corporate' },
+];
+
+const EMPTY_NEW_CUSTOMER = {
+  customer_type: 'individual' as CustomerType,
+  full_name: '',
+  cnic: '',
+  mobile: '',
+  whatsapp: '',
+  email: '',
+  address: '',
+  city: 'Lahore',
+  remarks: '',
+};
+
 export function SaleCreatePage() {
   const loading = usePageLoading();
   const navigate = useNavigate();
@@ -38,11 +52,11 @@ export function SaleCreatePage() {
   const { success, error } = useToast();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [creatingCustomer, setCreatingCustomer] = useState(false);
-  const [createCustomerOpen, setCreateCustomerOpen] = useState(false);
 
   const [vehicleId, setVehicleId] = useState('');
   const [customerId, setCustomerId] = useState('');
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] = useState(EMPTY_NEW_CUSTOMER);
 
   const [saleDate, setSaleDate] = useState(new Date().toISOString().slice(0, 10));
   const [salePrice, setSalePrice] = useState('');
@@ -61,36 +75,40 @@ export function SaleCreatePage() {
 
   const canProceed = useMemo(() => {
     if (step === 0) return !!vehicleId;
-    if (step === 1) return !!customerId;
-    return !!salePrice && Number(salePrice) > 0;
-  }, [step, vehicleId, customerId, salePrice]);
-
-  const handleCreateCustomer = async (values: Record<string, string>) => {
-    setCreatingCustomer(true);
-    try {
-      const created = await store.createCustomer(parseCustomerFormValues(values));
-      store.addAuditLog({
-        user_id: user?.user_id ?? 'usr_001',
-        action: 'CREATE',
-        table_name: 'customers',
-        record_id: created.customer_id,
-        ip_address: '127.0.0.1',
-      });
-      setCustomerId(created.customer_id);
-      setCreateCustomerOpen(false);
-      success('Customer added', `${created.full_name} is ready for this sale.`);
-    } catch (err) {
-      error('Could not add customer', err instanceof Error ? err.message : 'Save failed.');
-    } finally {
-      setCreatingCustomer(false);
+    if (step === 1) {
+      return showNewCustomer
+        ? !!newCustomer.full_name.trim() && !!newCustomer.mobile.trim()
+        : !!customerId;
     }
-  };
+    return !!salePrice && Number(salePrice) > 0;
+  }, [step, vehicleId, customerId, showNewCustomer, newCustomer, salePrice]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!canProceed) {
       error('Incomplete step', 'Please complete the current step before continuing');
       return;
     }
+
+    if (step === 1 && showNewCustomer) {
+      try {
+        const created = await store.createCustomer(parseCustomerFormValues(newCustomer));
+        store.addAuditLog({
+          user_id: user?.user_id ?? 'usr_001',
+          action: 'CREATE',
+          table_name: 'customers',
+          record_id: created.customer_id,
+          ip_address: '127.0.0.1',
+        });
+        setCustomerId(created.customer_id);
+        setShowNewCustomer(false);
+        setNewCustomer(EMPTY_NEW_CUSTOMER);
+        success('Customer added', `${created.full_name} selected for this sale.`);
+      } catch (err) {
+        error('Could not add customer', err instanceof Error ? err.message : 'Save failed.');
+        return;
+      }
+    }
+
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   };
 
@@ -236,33 +254,96 @@ export function SaleCreatePage() {
             >
               <CardHeader className="flex-row items-center justify-between">
                 <CardTitle>Select customer</CardTitle>
-                <Button type="button" variant="ghost" size="sm" onClick={() => setCreateCustomerOpen(true)}>
-                  + New customer
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowNewCustomer((prev) => !prev);
+                    if (showNewCustomer) setCustomerId('');
+                  }}
+                >
+                  {showNewCustomer ? 'Choose existing' : '+ New customer'}
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {customers.map((c) => (
-                    <button
-                      key={c.customer_id}
-                      type="button"
-                      onClick={() => setCustomerId(c.customer_id)}
-                      className={`rounded-lg border p-3 text-left transition-all ${
-                        customerId === c.customer_id
-                          ? 'border-accent bg-[var(--bg-active)] ring-2 ring-accent/20'
-                          : 'border-[var(--border-primary)] hover:border-accent/40'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-[var(--text-primary)]">{c.full_name}</span>
-                        <Badge variant="default">{c.customer_type}</Badge>
-                      </div>
-                      <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">
-                        {c.mobile} · {c.city}
-                      </p>
-                    </button>
-                  ))}
-                </div>
+                {showNewCustomer ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Select
+                      label="Type"
+                      value={newCustomer.customer_type}
+                      onChange={(e) =>
+                        setNewCustomer((p) => ({ ...p, customer_type: e.target.value as CustomerType }))
+                      }
+                      options={CUSTOMER_TYPE_OPTIONS}
+                    />
+                    <Input
+                      label="Full name"
+                      required
+                      value={newCustomer.full_name}
+                      onChange={(e) => setNewCustomer((p) => ({ ...p, full_name: e.target.value }))}
+                    />
+                    <Input
+                      label="CNIC"
+                      value={newCustomer.cnic}
+                      onChange={(e) => setNewCustomer((p) => ({ ...p, cnic: e.target.value }))}
+                    />
+                    <Input
+                      label="Mobile"
+                      required
+                      value={newCustomer.mobile}
+                      onChange={(e) => setNewCustomer((p) => ({ ...p, mobile: e.target.value }))}
+                    />
+                    <Input
+                      label="WhatsApp"
+                      type="tel"
+                      value={newCustomer.whatsapp}
+                      onChange={(e) => setNewCustomer((p) => ({ ...p, whatsapp: e.target.value }))}
+                    />
+                    <Input
+                      label="Email"
+                      type="email"
+                      value={newCustomer.email}
+                      onChange={(e) => setNewCustomer((p) => ({ ...p, email: e.target.value }))}
+                    />
+                    <Input
+                      label="City"
+                      value={newCustomer.city}
+                      onChange={(e) => setNewCustomer((p) => ({ ...p, city: e.target.value }))}
+                    />
+                    <div className="sm:col-span-2">
+                      <Textarea
+                        label="Address"
+                        rows={2}
+                        value={newCustomer.address}
+                        onChange={(e) => setNewCustomer((p) => ({ ...p, address: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {customers.map((c) => (
+                      <button
+                        key={c.customer_id}
+                        type="button"
+                        onClick={() => setCustomerId(c.customer_id)}
+                        className={`rounded-lg border p-3 text-left transition-all ${
+                          customerId === c.customer_id
+                            ? 'border-accent bg-[var(--bg-active)] ring-2 ring-accent/20'
+                            : 'border-[var(--border-primary)] hover:border-accent/40'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-[var(--text-primary)]">{c.full_name}</span>
+                          <Badge variant="default">{c.customer_type}</Badge>
+                        </div>
+                        <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">
+                          {c.mobile} · {c.city}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </motion.div>
           )}
@@ -361,7 +442,7 @@ export function SaleCreatePage() {
             Back
           </Button>
           {step < STEPS.length - 1 ? (
-            <Button onClick={handleNext} disabled={!canProceed}>
+            <Button onClick={() => void handleNext()} disabled={!canProceed}>
               Continue
             </Button>
           ) : (
@@ -371,19 +452,6 @@ export function SaleCreatePage() {
           )}
         </div>
       </Card>
-
-      <EditRecordModal
-        open={createCustomerOpen}
-        onClose={() => setCreateCustomerOpen(false)}
-        title="Add customer"
-        description="Fill in all contact fields — WhatsApp and address are below Mobile."
-        fields={CUSTOMER_EDIT_FIELDS}
-        values={CUSTOMER_CREATE_DEFAULT_VALUES}
-        onSave={handleCreateCustomer}
-        saving={creatingCustomer}
-        size="xl"
-        saveLabel="Add customer"
-      />
     </PageTransition>
   );
 }

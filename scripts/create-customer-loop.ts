@@ -84,45 +84,45 @@ async function testCustomersPageModal(page: import('playwright').Page, results: 
   });
 }
 
-async function testSalesModal(page: import('playwright').Page, results: Result[]) {
+async function testSalesInlineForm(page: import('playwright').Page, results: Result[]) {
   await page.goto(`${BASE}/sales/new`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(800);
 
-  // step 0 - pick first vehicle if any
-  const vehicleBtn = page.locator('button').filter({ hasText: /MX-|stock/i }).first();
-  if ((await vehicleBtn.count()) === 0) {
-    const anyVehicle = page.locator('form button, [class*="rounded-lg border p-3"]').first();
-    if ((await anyVehicle.count()) > 0) await anyVehicle.click();
-  } else {
-    await vehicleBtn.click();
-  }
+  const vehicle = page.locator('button.rounded-lg.border.p-3').first();
+  if ((await vehicle.count()) > 0) await vehicle.click();
 
   await page.getByRole('button', { name: /^Continue$/i }).click();
   await page.waitForTimeout(600);
 
   const newBtn = page.getByRole('button', { name: /\+?\s*New customer/i });
-  const newCount = await newBtn.count();
   results.push({
-    label: 'Sales flow has New customer button',
-    ok: newCount > 0,
-    detail: newCount > 0 ? 'Button found' : 'No New customer button',
+    label: 'Sales flow has New customer toggle',
+    ok: (await newBtn.count()) > 0,
+    detail: (await newBtn.count()) > 0 ? 'Button found' : 'No button',
   });
-  if (newCount === 0) return;
+  if ((await newBtn.count()) === 0) return;
 
   await newBtn.first().click();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(400);
 
-  const wa = await fieldVisible(page, 'WhatsApp');
-  const addr = await fieldVisible(page, 'Address');
+  const wa = (await page.getByLabel(/^WhatsApp$/i).count()) > 0;
+  const addr = (await page.getByLabel(/^Address$/i).count()) > 0;
+  const chooseExisting = (await page.getByRole('button', { name: /choose existing/i }).count()) > 0;
+
   results.push({
-    label: 'Sales new-customer modal shows WhatsApp',
-    ok: wa,
-    detail: wa ? 'visible' : 'NOT FOUND',
+    label: 'Sales inline form shows Choose existing',
+    ok: chooseExisting,
+    detail: chooseExisting ? 'inline mode' : 'not inline',
   });
   results.push({
-    label: 'Sales new-customer modal shows Address',
+    label: 'Sales inline form shows WhatsApp',
+    ok: wa,
+    detail: wa ? 'visible in box' : 'NOT FOUND',
+  });
+  results.push({
+    label: 'Sales inline form shows Address',
     ok: addr,
-    detail: addr ? 'visible' : 'NOT FOUND',
+    detail: addr ? 'visible in box' : 'NOT FOUND',
   });
 }
 
@@ -170,7 +170,7 @@ async function main() {
   try {
     await login(page);
     await testCustomersPageModal(page, results);
-    await testSalesModal(page, results);
+    await testSalesInlineForm(page, results);
     await testPurchasesDealerModal(page, results);
   } catch (err) {
     results.push({
