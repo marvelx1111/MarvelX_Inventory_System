@@ -1,12 +1,21 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { EditRecordModal } from '@/components/ui/EditRecordModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SearchInput } from '@/components/ui/SearchInput';
 import { SkeletonCard } from '@/components/ui/Skeleton';
+import {
+  CUSTOMER_CREATE_DEFAULT_VALUES,
+  CUSTOMER_EDIT_FIELDS,
+  parseCustomerFormValues,
+} from '@/config/edit-fields';
+import { useAuth, usePermission } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
 import type { Customer, CustomerType } from '@/types';
 import { formatCNIC, getInitials } from '@/utils/format';
@@ -27,7 +36,15 @@ const TYPE_LABEL: Record<CustomerType, string> = {
 
 export function CustomersPage() {
   const loading = usePageLoading();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { success, error } = useToast();
+  const canManageCustomers = usePermission('customers');
   const [search, setSearch] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  void refreshKey;
 
   const customers = store.getCustomers();
 
@@ -39,10 +56,34 @@ export function CustomersPage() {
         c.full_name.toLowerCase().includes(q) ||
         c.cnic.includes(q) ||
         c.mobile.includes(q) ||
+        c.whatsapp.includes(q) ||
         c.city.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q),
+        c.email.toLowerCase().includes(q) ||
+        c.address.toLowerCase().includes(q),
     );
   }, [customers, search]);
+
+  const handleCreate = async (values: Record<string, string>) => {
+    setSaving(true);
+    try {
+      const created = await store.createCustomer(parseCustomerFormValues(values));
+      store.addAuditLog({
+        user_id: user?.user_id ?? 'usr_001',
+        action: 'CREATE',
+        table_name: 'customers',
+        record_id: created.customer_id,
+        ip_address: '127.0.0.1',
+      });
+      success('Customer added', `${created.full_name} was saved successfully.`);
+      setCreateOpen(false);
+      setRefreshKey((k) => k + 1);
+      navigate(`/customers/${created.customer_id}`);
+    } catch (err) {
+      error('Could not add customer', err instanceof Error ? err.message : 'Save failed.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -62,6 +103,13 @@ export function CustomersPage() {
       <PageHeader
         title="Customers"
         subtitle={`${filtered.length} customer${filtered.length !== 1 ? 's' : ''}`}
+        actions={
+          canManageCustomers ? (
+            <Button type="button" onClick={() => setCreateOpen(true)}>
+              + Add customer
+            </Button>
+          ) : undefined
+        }
       />
 
       <SearchInput
@@ -75,8 +123,14 @@ export function CustomersPage() {
       {filtered.length === 0 ? (
         <EmptyState
           title="No customers found"
-          description={search ? 'Try a different search term.' : 'Customers will appear here once added.'}
-          action={search ? { label: 'Clear search', onClick: () => setSearch('') } : undefined}
+          description={search ? 'Try a different search term.' : 'Add your first customer to get started.'}
+          action={
+            search
+              ? { label: 'Clear search', onClick: () => setSearch('') }
+              : canManageCustomers
+                ? { label: 'Add customer', onClick: () => setCreateOpen(true) }
+                : undefined
+          }
         />
       ) : (
         <div className="space-y-2">
@@ -87,6 +141,17 @@ export function CustomersPage() {
           </AnimatePresence>
         </div>
       )}
+
+      <EditRecordModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Add customer"
+        description="Enter contact details for the new customer."
+        fields={CUSTOMER_EDIT_FIELDS}
+        values={CUSTOMER_CREATE_DEFAULT_VALUES}
+        onSave={handleCreate}
+        saving={saving}
+      />
     </PageTransition>
   );
 }

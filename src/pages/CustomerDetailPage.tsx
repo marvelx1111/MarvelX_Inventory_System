@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
-import { CUSTOMER_EDIT_FIELDS, customerToFormValues } from '@/config/edit-fields';
+import { CUSTOMER_EDIT_FIELDS, customerToFormValues, parseCustomerFormValues } from '@/config/edit-fields';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useCanEdit } from '@/hooks/useCanEdit';
@@ -42,17 +42,7 @@ export function CustomerDetailPage() {
     if (!profile) return;
     setSaving(true);
     try {
-      const updated = await store.updateCustomer(profile.customer.customer_id, {
-        full_name: values.full_name.trim(),
-        customer_type: values.customer_type as CustomerType,
-        cnic: values.cnic.trim(),
-        mobile: values.mobile.trim(),
-        whatsapp: values.whatsapp.trim(),
-        email: values.email.trim(),
-        address: values.address.trim(),
-        city: values.city.trim(),
-        remarks: values.remarks.trim(),
-      });
+      const updated = await store.updateCustomer(profile.customer.customer_id, parseCustomerFormValues(values));
       if (!updated) {
         error('Update failed', 'Could not save customer changes.');
         return;

@@ -123,3 +123,29 @@ export function customerToFormValues(customer: {
     remarks: customer.remarks,
   };
 }
+
+export const CUSTOMER_CREATE_DEFAULT_VALUES: Record<string, string> = {
+  full_name: '',
+  customer_type: 'individual',
+  cnic: '',
+  mobile: '',
+  whatsapp: '',
+  email: '',
+  address: '',
+  city: 'Lahore',
+  remarks: '',
+};
+
+export function parseCustomerFormValues(values: Record<string, string>) {
+  return {
+    full_name: values.full_name.trim(),
+    customer_type: values.customer_type.trim() as 'individual' | 'dealer' | 'corporate',
+    cnic: values.cnic.trim(),
+    mobile: values.mobile.trim(),
+    whatsapp: values.whatsapp.trim(),
+    email: values.email.trim(),
+    address: values.address.trim(),
+    city: values.city.trim(),
+    remarks: values.remarks.trim(),
+  };
+}
