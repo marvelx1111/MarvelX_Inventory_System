@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
 import type { PaymentMethod } from '@/types';
+import { formatPaymentMethod } from '@/utils/constants';
 import { formatCNIC, formatDate, formatPKR, parseMoneyInput } from '@/utils/format';
 import { computeSaleFinancials } from '@/utils/sale';
 import { PageTransition } from './PageTransition';
@@ -262,14 +263,7 @@ export function SaleDetailPage() {
                 value={formatPKR(remainingBalance)}
                 highlight={remainingBalance > 0 ? 'warning' : 'success'}
               />
-              <InfoItem
-                label="Payment method"
-                value={
-                  sale.payment_method === 'cheque'
-                    ? 'Check/PO'
-                    : sale.payment_method.replace('_', ' ')
-                }
-              />
+              <InfoItem label="Payment method" value={formatPaymentMethod(sale.payment_method)} />
               {sale.remarks && (
                 <div className="sm:col-span-2">
                   <InfoItem label="Remarks" value={sale.remarks} />

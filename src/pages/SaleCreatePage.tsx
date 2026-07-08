@@ -15,18 +15,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
 import type { CustomerType, PaymentMethod } from '@/types';
+import { PAYMENT_METHOD_OPTIONS } from '@/utils/constants';
 import { formatPKR, parseMoneyInput } from '@/utils/format';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
 
 const STEPS = ['Select vehicle', 'Select customer', 'Pricing & payment'] as const;
-
-const PAYMENT_OPTIONS = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
-  { value: 'cheque', label: 'Check/PO' },
-  { value: 'online', label: 'Online' },
-];
 
 const CUSTOMER_TYPE_OPTIONS = [
   { value: 'individual', label: 'Individual' },
@@ -421,7 +415,7 @@ export function SaleCreatePage() {
                     label="Payment method"
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                    options={PAYMENT_OPTIONS}
+                    options={PAYMENT_METHOD_OPTIONS}
                   />
                   <Input
                     label="Selling price (PKR)"

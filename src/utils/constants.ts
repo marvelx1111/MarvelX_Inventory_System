@@ -1,4 +1,4 @@
-import type { BiometricStatus, PPFJobStatus, PermissionModule, VehicleStatus } from '@/types';
+import type { BiometricStatus, PaymentMethod, PPFJobStatus, PermissionModule, VehicleStatus } from '@/types';
 
 export interface NavItem {
   label: string;
@@ -188,3 +188,18 @@ export const BRAND = {
   tagline: 'Dealership ERP',
   accent: '#CD1719',
 } as const;
+
+export const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'bank_transfer', label: 'Bank Transfer' },
+  { value: 'check_po', label: 'Check/PO' },
+  { value: 'online', label: 'Online' },
+];
+
+export function formatPaymentMethod(method: PaymentMethod | string): string {
+  if (method === 'cheque' || method === 'check_po') return 'Check/PO';
+  return method
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}

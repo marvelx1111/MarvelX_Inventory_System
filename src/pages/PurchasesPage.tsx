@@ -19,17 +19,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
 import type { BiometricStatus, CustomerType, PaymentMethod } from '@/types';
-import { BIOMETRIC_OPTIONS, DOCUMENT_CHECKLIST_ITEMS } from '@/utils/constants';
+import { BIOMETRIC_OPTIONS, DOCUMENT_CHECKLIST_ITEMS, PAYMENT_METHOD_OPTIONS } from '@/utils/constants';
 import { cn, formatDate, formatPKR } from '@/utils/format';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
-
-const PAYMENT_OPTIONS = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
-  { value: 'cheque', label: 'Cheque' },
-  { value: 'online', label: 'Online' },
-];
 
 const FUEL_OPTIONS = [
   { value: 'Petrol', label: 'Petrol' },
@@ -263,7 +256,7 @@ export function PurchasesPage() {
                   label="Payment method"
                   value={form.payment_method}
                   onChange={(e) => update('payment_method', e.target.value)}
-                  options={PAYMENT_OPTIONS}
+                  options={PAYMENT_METHOD_OPTIONS}
                 />
                 <Input
                   label="Reference number"

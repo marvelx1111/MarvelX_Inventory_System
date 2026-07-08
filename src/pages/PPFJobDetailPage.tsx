@@ -13,8 +13,8 @@ import { PPF_CUSTOMER_EDIT_FIELDS, PPF_JOB_EDIT_FIELDS } from '@/config/edit-fie
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
-import type { PPFJobStatus, PaymentMethod } from '@/types';
-import { PPF_STATUS_CONFIG } from '@/utils/constants';
+import type { PPFJobStatus } from '@/types';
+import { PPF_STATUS_CONFIG, formatPaymentMethod } from '@/utils/constants';
 import { cn, formatDate, formatPKR } from '@/utils/format';
 
 const STATUS_FLOW: Record<PPFJobStatus, PPFJobStatus[]> = {
@@ -23,13 +23,6 @@ const STATUS_FLOW: Record<PPFJobStatus, PPFJobStatus[]> = {
   completed: ['delivered'],
   delivered: [],
 };
-
-function formatPaymentMethod(method: PaymentMethod): string {
-  return method
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
 
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (

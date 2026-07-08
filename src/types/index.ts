@@ -1,7 +1,7 @@
 export type UserStatus = 'active' | 'inactive';
 export type CustomerType = 'individual' | 'dealer' | 'corporate';
 export type VehicleStatus = 'in_stock' | 'booked' | 'sold';
-export type PaymentMethod = 'cash' | 'bank_transfer' | 'cheque' | 'online';
+export type PaymentMethod = 'cash' | 'bank_transfer' | 'cheque' | 'check_po' | 'online';
 export type PPFJobStatus = 'booked' | 'in_progress' | 'completed' | 'delivered';
 export type PPFStockTxnType = 'purchase' | 'usage' | 'adjustment';
 export type BiometricStatus = 'done' | 'not_taken' | 'open_bio' | 'isb_no_bio';

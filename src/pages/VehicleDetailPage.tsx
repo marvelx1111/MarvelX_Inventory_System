@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
 import type { BiometricStatus, VehicleDocument, VehicleStatus } from '@/types';
-import { BIOMETRIC_OPTIONS, BIOMETRIC_STATUS_CONFIG, VEHICLE_STATUS_CONFIG } from '@/utils/constants';
+import { BIOMETRIC_OPTIONS, BIOMETRIC_STATUS_CONFIG, VEHICLE_STATUS_CONFIG, formatPaymentMethod } from '@/utils/constants';
 import { formatCNIC, formatDate, formatPKR, cn } from '@/utils/format';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
@@ -226,7 +226,7 @@ export function VehicleDetailPage() {
               <dl className="space-y-3">
                 <DetailItem label="Purchase date" value={formatDate(purchase.purchase_date)} />
                 <DetailItem label="Purchase price" value={formatPKR(purchase.purchase_price)} />
-                <DetailItem label="Payment method" value={purchase.payment_method.replace('_', ' ')} />
+                <DetailItem label="Payment method" value={formatPaymentMethod(purchase.payment_method)} />
                 <DetailItem label="Reference" value={purchase.reference_number || '—'} />
                 {seller && (
                   <>

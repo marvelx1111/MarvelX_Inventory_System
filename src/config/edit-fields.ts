@@ -1,4 +1,5 @@
 import type { EditFieldConfig } from '@/components/ui/EditRecordModal';
+import { PAYMENT_METHOD_OPTIONS } from '@/utils/constants';
 
 export const CUSTOMER_EDIT_FIELDS: EditFieldConfig[] = [
   { key: 'full_name', label: 'Full name', required: true },
@@ -62,12 +63,7 @@ export const SALE_EDIT_FIELDS: EditFieldConfig[] = [
     key: 'payment_method',
     label: 'Payment method',
     type: 'select',
-    options: [
-      { value: 'cash', label: 'Cash' },
-      { value: 'bank_transfer', label: 'Bank Transfer' },
-      { value: 'cheque', label: 'Check/PO' },
-      { value: 'online', label: 'Online' },
-    ],
+    options: PAYMENT_METHOD_OPTIONS.map(({ value, label }) => ({ value, label })),
   },
   { key: 'remarks', label: 'Remarks', type: 'textarea', rows: 2, fullWidth: true },
 ];
