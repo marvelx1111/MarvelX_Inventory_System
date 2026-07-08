@@ -262,7 +262,14 @@ export function SaleDetailPage() {
                 value={formatPKR(remainingBalance)}
                 highlight={remainingBalance > 0 ? 'warning' : 'success'}
               />
-              <InfoItem label="Payment method" value={sale.payment_method.replace('_', ' ')} />
+              <InfoItem
+                label="Payment method"
+                value={
+                  sale.payment_method === 'cheque'
+                    ? 'Check/PO'
+                    : sale.payment_method.replace('_', ' ')
+                }
+              />
               {sale.remarks && (
                 <div className="sm:col-span-2">
                   <InfoItem label="Remarks" value={sale.remarks} />

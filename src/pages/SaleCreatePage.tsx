@@ -24,7 +24,7 @@ const STEPS = ['Select vehicle', 'Select customer', 'Pricing & payment'] as cons
 const PAYMENT_OPTIONS = [
   { value: 'cash', label: 'Cash' },
   { value: 'bank_transfer', label: 'Bank Transfer' },
-  { value: 'cheque', label: 'Cheque' },
+  { value: 'cheque', label: 'Check/PO' },
   { value: 'online', label: 'Online' },
 ];
 

@@ -65,7 +65,7 @@ export const SALE_EDIT_FIELDS: EditFieldConfig[] = [
     options: [
       { value: 'cash', label: 'Cash' },
       { value: 'bank_transfer', label: 'Bank Transfer' },
-      { value: 'cheque', label: 'Cheque' },
+      { value: 'cheque', label: 'Check/PO' },
       { value: 'online', label: 'Online' },
     ],
   },
