@@ -17,7 +17,9 @@ import type {
   AppData,
   AuditLog,
   CreateCustomerInput,
+  CreatePPFCustomerInput,
   CreatePPFJobInput,
+  CreatePPFVehicleInput,
   CreatePurchaseInput,
   CreateSaleInput,
   CreateShowroomExpenseInput,
@@ -208,6 +210,8 @@ class DataStore {
     this.data.sales.forEach((s) => track('sal', s.sale_id));
     this.data.salePayments.forEach((p) => track('spay', p.payment_id));
     this.data.deliveryRecords.forEach((d) => track('del', d.delivery_id));
+    this.data.ppfCustomers.forEach((c) => track('ppfc', c.ppf_customer_id));
+    this.data.ppfVehicles.forEach((v) => track('ppfv', v.ppf_vehicle_id));
     this.data.ppfJobCards.forEach((j) => track('job', j.job_id));
     this.data.ppfStockTransactions.forEach((t) => track('ppftx', t.transaction_id));
     this.data.auditLogs.forEach((l) => track('aud', l.log_id));
@@ -876,22 +880,68 @@ class DataStore {
     return job;
   }
 
-  createPPFJob(input: CreatePPFJobInput): PPFJobCard {
+  async createPPFCustomer(input: CreatePPFCustomerInput): Promise<PPFCustomer> {
+    const customer: PPFCustomer = {
+      ppf_customer_id: this.nextId('ppfc'),
+      full_name: input.full_name.trim(),
+      mobile: input.mobile.trim(),
+      whatsapp: input.whatsapp.trim(),
+      email: input.email.trim(),
+      address: input.address.trim(),
+      city: input.city.trim(),
+    };
+
+    this.data.ppfCustomers.push(customer);
+    ensurePersisted(
+      await persistRowInsert('ppf_customers', customer as unknown as Record<string, unknown>),
+    );
+    this.revision += 1;
+    this.notify();
+    return customer;
+  }
+
+  async createPPFVehicle(input: CreatePPFVehicleInput): Promise<PPFVehicle> {
+    const vehicle: PPFVehicle = {
+      ppf_vehicle_id: this.nextId('ppfv'),
+      ppf_customer_id: input.ppf_customer_id,
+      make: input.make.trim(),
+      model: input.model.trim(),
+      variant: input.variant.trim(),
+      model_year: Number(input.model_year),
+      registration_number: input.registration_number.trim(),
+      color: input.color.trim(),
+    };
+
+    this.data.ppfVehicles.push(vehicle);
+    ensurePersisted(
+      await persistRowInsert('ppf_vehicles', vehicle as unknown as Record<string, unknown>),
+    );
+    this.revision += 1;
+    this.notify();
+    return vehicle;
+  }
+
+  async createPPFJob(input: CreatePPFJobInput): Promise<PPFJobCard> {
     const job: PPFJobCard = {
       job_id: this.nextId('job'),
       ppf_customer_id: input.ppf_customer_id,
       ppf_vehicle_id: input.ppf_vehicle_id,
       package_id: input.package_id,
       roll_id: input.roll_id,
-      installer_name: input.installer_name,
+      installer_name: input.installer_name.trim(),
       booked_date: input.booked_date,
       completion_date: null,
-      warranty_period: input.warranty_period,
+      warranty_period: Number(input.warranty_period),
       status: input.status ?? 'booked',
-      notes: input.notes,
+      notes: input.notes.trim(),
     };
 
     this.data.ppfJobCards.push(job);
+    ensurePersisted(
+      await persistRowInsert('ppf_job_cards', job as unknown as Record<string, unknown>),
+    );
+    this.revision += 1;
+    this.notify();
     return job;
   }
 

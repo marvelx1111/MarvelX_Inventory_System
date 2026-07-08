@@ -395,6 +395,10 @@ export type CreatePPFJobInput = Omit<PPFJobCard, 'job_id' | 'completion_date' | 
   status?: PPFJobStatus;
 };
 
+export type CreatePPFCustomerInput = Omit<PPFCustomer, 'ppf_customer_id'>;
+
+export type CreatePPFVehicleInput = Omit<PPFVehicle, 'ppf_vehicle_id'>;
+
 export const PERMISSION_MODULES = [
   'dashboard',
   'inventory',
