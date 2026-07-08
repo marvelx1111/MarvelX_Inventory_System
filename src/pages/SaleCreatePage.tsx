@@ -69,7 +69,6 @@ export function SaleCreatePage() {
   const selectedVehicle = store.getVehicleById(vehicleId);
   const selectedCustomer = store.getCustomerById(customerId);
 
-  const actualPrice = selectedVehicle?.purchase_price ?? 0;
   const totalCost = selectedVehicle?.total_cost ?? 0;
   const sellingAmount = Number(sellingPrice) || 0;
   const paymentAmount = Math.min(Number(paymentReceived) || 0, sellingAmount);
@@ -253,13 +252,7 @@ export function SaleCreatePage() {
                           {v.make} {v.model} {v.model_year}
                         </p>
                         <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                          Bought for {formatPKR(v.purchase_price)}
-                          {v.total_cost > v.purchase_price && (
-                            <span className="text-[var(--text-tertiary)]">
-                              {' '}
-                              · Total cost {formatPKR(v.total_cost)}
-                            </span>
-                          )}
+                          Total cost (incl. expenses) {formatPKR(v.total_cost)}
                         </p>
                       </button>
                     ))}
@@ -397,16 +390,11 @@ export function SaleCreatePage() {
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
-                          Actual price (bought for)
+                          Total cost (incl. expenses)
                         </p>
                         <p className="mt-1 text-lg font-bold text-[var(--text-primary)]">
-                          {formatPKR(actualPrice)}
+                          {formatPKR(totalCost)}
                         </p>
-                        {totalCost > actualPrice && (
-                          <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">
-                            Total cost incl. expenses: {formatPKR(totalCost)}
-                          </p>
-                        )}
                       </div>
                       {selectedCustomer && (
                         <div>
@@ -471,8 +459,8 @@ export function SaleCreatePage() {
 
                 <div className="grid gap-3 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-tertiary)] p-4 sm:grid-cols-2">
                   <div>
-                    <p className="text-xs text-[var(--text-tertiary)]">Bought for</p>
-                    <p className="text-lg font-bold text-[var(--text-primary)]">{formatPKR(actualPrice)}</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Total cost (incl. expenses)</p>
+                    <p className="text-lg font-bold text-[var(--text-primary)]">{formatPKR(totalCost)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-[var(--text-tertiary)]">Selling price</p>

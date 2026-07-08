@@ -56,7 +56,6 @@ export function SaleDetailPage() {
   const isFullPayment = financials?.isFullyPaid ?? false;
   const isLossSale = financials?.isLossSale ?? false;
   const totalCost = vehicle?.total_cost ?? 0;
-  const actualPrice = vehicle?.purchase_price ?? 0;
   const remainingLabel = isLossSale ? 'Remaining to break even' : 'Remaining balance';
 
   const handleSaveSale = async (values: Record<string, string>) => {
@@ -247,7 +246,7 @@ export function SaleDetailPage() {
               <InfoItem label="Sale date" value={formatDate(sale.sale_date)} />
               <InfoItem label="Salesperson" value={sale.salesperson} />
               {vehicle && (
-                <InfoItem label="Actual price (bought for)" value={formatPKR(actualPrice)} />
+                <InfoItem label="Total cost (incl. expenses)" value={formatPKR(totalCost)} />
               )}
               <InfoItem label="Selling price" value={formatPKR(sellingPrice)} highlight="success" />
               <InfoItem
@@ -260,9 +259,6 @@ export function SaleDetailPage() {
                 highlight={remainingBalance > 0 ? 'warning' : 'success'}
               />
               <InfoItem label="Payment method" value={sale.payment_method.replace('_', ' ')} />
-              {vehicle && (
-                <InfoItem label="Total cost (incl. expenses)" value={formatPKR(totalCost)} />
-              )}
               {sale.remarks && (
                 <div className="sm:col-span-2">
                   <InfoItem label="Remarks" value={sale.remarks} />
@@ -321,7 +317,7 @@ export function SaleDetailPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {vehicle && (
-              <SummaryRow label="Actual price (bought for)" value={formatPKR(actualPrice)} />
+              <SummaryRow label="Total cost (incl. expenses)" value={formatPKR(totalCost)} />
             )}
             <SummaryRow label="Selling price" value={formatPKR(sellingPrice)} highlight="success" />
             <SummaryRow
