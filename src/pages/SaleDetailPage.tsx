@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { EditableCard } from '@/components/ui/EditableCard';
 import { EditRecordModal } from '@/components/ui/EditRecordModal';
@@ -15,6 +15,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
 import type { PaymentMethod } from '@/types';
 import { formatCNIC, formatDate, formatPKR } from '@/utils/format';
+import { computeSaleFinancials } from '@/utils/sale';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
 
@@ -42,9 +43,17 @@ export function SaleDetailPage() {
     ? store.getCustomerById(acquisition.seller_customer_id)
     : undefined;
 
-  const sellingPrice = sale ? sale.sale_price - sale.discount : 0;
+  const financials = useMemo(() => {
+    if (!sale) return null;
+    return computeSaleFinancials(sale, vehicle?.total_cost ?? 0);
+  }, [sale, vehicle, refreshKey]);
+
+  const sellingPrice = financials?.sellingPrice ?? 0;
+  const paymentReceived = financials?.paymentReceived ?? 0;
+  const remainingBalance = financials?.remainingBalance ?? 0;
+  const profit = financials?.profit ?? 0;
+  const isFullPayment = financials?.isFullyPaid ?? false;
   const actualPrice = vehicle?.purchase_price ?? 0;
-  const isFullPayment = sale ? sale.balance <= 0 && sale.advance > 0 : false;
 
   const handleSaveSale = async (values: Record<string, string>) => {
     if (!sale) return;
@@ -135,7 +144,7 @@ export function SaleDetailPage() {
       error('Invalid amount', 'Enter the total payment received so far');
       return;
     }
-    if (totalReceived < sale.advance) {
+    if (totalReceived < paymentReceived) {
       error('Cannot reduce payment', 'Payment received cannot be less than what was already recorded');
       return;
     }
@@ -208,15 +217,17 @@ export function SaleDetailPage() {
       />
 
       <div className="mb-6 flex flex-wrap gap-2">
-        <Badge variant={sale.balance <= 0 ? 'success' : 'warning'} dot>
-          {sale.balance <= 0
+        <Badge variant={remainingBalance <= 0 ? 'success' : 'warning'} dot>
+          {remainingBalance <= 0
             ? isFullPayment
               ? 'Fully paid'
               : 'Settled'
-            : `${formatPKR(sale.balance)} remaining`}
+            : `${formatPKR(remainingBalance)} remaining`}
         </Badge>
-        <Badge variant="accent">Selling price: {formatPKR(sellingPrice)}</Badge>
-        <Badge variant="info">Profit: {formatPKR(sale.profit)}</Badge>
+        <Badge variant="success">Selling price: {formatPKR(sellingPrice)}</Badge>
+        <Badge variant={profit >= 0 ? 'success' : 'accent'}>
+          Profit: {formatPKR(profit)}
+        </Badge>
         {vehicle && (
           <Link to={`/inventory/${vehicle.vehicle_id}`}>
             <Badge variant="info">View vehicle</Badge>
@@ -232,15 +243,15 @@ export function SaleDetailPage() {
               {vehicle && (
                 <InfoItem label="Actual price (bought for)" value={formatPKR(actualPrice)} />
               )}
-              <InfoItem label="Selling price" value={formatPKR(sellingPrice)} highlight="accent" />
+              <InfoItem label="Selling price" value={formatPKR(sellingPrice)} highlight="success" />
               <InfoItem
                 label="Payment received"
-                value={sale.advance > 0 ? formatPKR(sale.advance) : 'None yet'}
+                value={paymentReceived > 0 ? formatPKR(paymentReceived) : 'None yet'}
               />
               <InfoItem
                 label="Remaining balance"
-                value={formatPKR(sale.balance)}
-                highlight={sale.balance > 0 ? 'warning' : undefined}
+                value={formatPKR(remainingBalance)}
+                highlight={remainingBalance > 0 ? 'warning' : 'success'}
               />
               <InfoItem label="Payment method" value={sale.payment_method.replace('_', ' ')} />
               {vehicle && vehicle.total_cost > actualPrice && (
@@ -306,28 +317,35 @@ export function SaleDetailPage() {
             {vehicle && (
               <SummaryRow label="Actual price (bought for)" value={formatPKR(actualPrice)} />
             )}
-            <SummaryRow label="Selling price" value={formatPKR(sellingPrice)} highlight="accent" />
+            <SummaryRow label="Selling price" value={formatPKR(sellingPrice)} highlight="success" />
             <SummaryRow
               label="Payment received"
-              value={sale.advance > 0 ? formatPKR(sale.advance) : 'None yet'}
-              highlight={sale.advance > 0 ? 'success' : undefined}
+              value={paymentReceived > 0 ? formatPKR(paymentReceived) : 'None yet'}
+              highlight={paymentReceived > 0 ? 'success' : undefined}
             />
             <SummaryRow
               label="Remaining balance"
-              value={formatPKR(sale.balance)}
-              highlight={sale.balance > 0 ? 'warning' : 'success'}
+              value={formatPKR(remainingBalance)}
+              highlight={remainingBalance > 0 ? 'warning' : 'success'}
             />
+            {vehicle && (
+              <SummaryRow
+                label="Profit"
+                value={formatPKR(profit)}
+                highlight={profit >= 0 ? 'success' : 'loss'}
+              />
+            )}
           </CardContent>
         </Card>
 
-        {sale.balance > 0 && (
+        {remainingBalance > 0 && (
           <Card padding="md" className="no-print lg:col-span-3">
             <CardHeader>
               <CardTitle>Record payment</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="mb-4 text-sm text-[var(--text-secondary)]">
-                Customer still owes <strong className="text-amber-600">{formatPKR(sale.balance)}</strong>.
+                Customer still owes <strong className="text-amber-600">{formatPKR(remainingBalance)}</strong>.
                 Enter the <strong>total payment received so far</strong> (including any token paid earlier).
               </p>
               <form onSubmit={handleRecordPayment} className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -336,12 +354,12 @@ export function SaleDetailPage() {
                     label="Total payment received (PKR)"
                     type="number"
                     required
-                    min={sale.advance}
+                    min={paymentReceived}
                     max={sellingPrice}
                     value={paymentInput}
                     onChange={(e) => setPaymentInput(e.target.value)}
-                    placeholder={String(sale.advance || '')}
-                    hint={`Currently recorded: ${formatPKR(sale.advance)} · Selling price: ${formatPKR(sellingPrice)}`}
+                    placeholder={String(paymentReceived || '')}
+                    hint={`Currently recorded: ${formatPKR(paymentReceived)} · Selling price: ${formatPKR(sellingPrice)}`}
                   />
                 </div>
                 <Button type="submit" loading={recordingPayment} className="sm:mb-0.5">
@@ -421,7 +439,7 @@ function InfoItem({
 }: {
   label: string;
   value: string;
-  highlight?: 'accent' | 'warning';
+  highlight?: 'accent' | 'warning' | 'success';
 }) {
   return (
     <div>
@@ -432,7 +450,9 @@ function InfoItem({
             ? 'text-accent'
             : highlight === 'warning'
               ? 'text-amber-600'
-              : 'text-[var(--text-primary)]'
+              : highlight === 'success'
+                ? 'text-emerald-600'
+                : 'text-[var(--text-primary)]'
         }`}
       >
         {value}
@@ -448,7 +468,7 @@ function SummaryRow({
 }: {
   label: string;
   value: string;
-  highlight?: 'success' | 'warning' | 'accent';
+  highlight?: 'success' | 'warning' | 'accent' | 'loss';
 }) {
   const color =
     highlight === 'success'
@@ -457,7 +477,9 @@ function SummaryRow({
         ? 'text-amber-600'
         : highlight === 'accent'
           ? 'text-accent'
-          : 'text-[var(--text-primary)]';
+          : highlight === 'loss'
+            ? 'text-red-600'
+            : 'text-[var(--text-primary)]';
 
   return (
     <div className="flex items-center justify-between">

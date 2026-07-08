@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AppData, User } from '@/types';
+import { computeSaleFinancials } from '@/utils/sale';
 
 const TABLES: { key: keyof AppData; table: string }[] = [
   { key: 'roles', table: 'roles' },
@@ -80,15 +81,25 @@ export async function fetchAllFromSupabase(client: SupabaseClient): Promise<AppD
     total_cost: num(v.total_cost),
   }));
 
-  result.sales = result.sales.map((s) => ({
-    ...s,
-    sale_price: num(s.sale_price),
-    discount: num(s.discount),
-    advance: num(s.advance),
-    balance: num(s.balance),
-    profit: num(s.profit),
-    remarks: String(s.remarks ?? ''),
-  }));
+  result.sales = result.sales.map((s) => {
+    const normalized = {
+      ...s,
+      sale_price: num(s.sale_price),
+      discount: num(s.discount),
+      advance: num(s.advance),
+      balance: num(s.balance),
+      profit: num(s.profit),
+      remarks: String(s.remarks ?? ''),
+    };
+    const vehicle = result.vehicles.find((v) => v.vehicle_id === s.vehicle_id);
+    const financials = computeSaleFinancials(normalized, vehicle?.total_cost ?? 0);
+    return {
+      ...normalized,
+      advance: financials.paymentReceived,
+      balance: financials.remainingBalance,
+      profit: financials.profit,
+    };
+  });
 
   result.vehicleDocuments = result.vehicleDocuments.map((d) => ({
     ...d,

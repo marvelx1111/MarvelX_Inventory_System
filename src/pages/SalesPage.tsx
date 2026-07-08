@@ -9,12 +9,14 @@ import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { store } from '@/data/store';
 import { VEHICLE_STATUS_CONFIG } from '@/utils/constants';
 import { formatDate, formatPKR } from '@/utils/format';
+import { computeSaleFinancials } from '@/utils/sale';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
 
 function getSaleStatus(sale: ReturnType<typeof store.getSales>[number]) {
   const vehicle = store.getVehicleById(sale.vehicle_id);
-  if (sale.balance <= 0) return { label: 'Paid', variant: 'success' as const };
+  const { remainingBalance } = computeSaleFinancials(sale, vehicle?.total_cost ?? 0);
+  if (remainingBalance <= 0) return { label: 'Paid', variant: 'success' as const };
   if (vehicle?.status === 'booked') return { label: 'Booked', variant: 'warning' as const };
   return { label: 'Pending', variant: 'info' as const };
 }
@@ -69,6 +71,7 @@ export function SalesPage() {
             const customer = store.getCustomerById(sale.customer_id);
             const status = getSaleStatus(sale);
             const vehicleStatus = vehicle ? VEHICLE_STATUS_CONFIG[vehicle.status] : null;
+            const financials = computeSaleFinancials(sale, vehicle?.total_cost ?? 0);
 
             return (
               <motion.div
@@ -105,25 +108,27 @@ export function SalesPage() {
                       <div className="flex shrink-0 flex-wrap items-center gap-4 sm:text-right">
                         <div>
                           <p className="text-xs text-[var(--text-tertiary)]">Selling price</p>
-                          <p className="font-semibold text-accent">
-                            {formatPKR(sale.sale_price - sale.discount)}
+                          <p className="font-semibold text-emerald-600">
+                            {formatPKR(financials.sellingPrice)}
                           </p>
                         </div>
                         <div>
                           <p className="text-xs text-[var(--text-tertiary)]">Payment received</p>
                           <p className="font-semibold text-emerald-600">
-                            {sale.advance > 0 ? formatPKR(sale.advance) : '—'}
+                            {financials.paymentReceived > 0 ? formatPKR(financials.paymentReceived) : '—'}
                           </p>
                         </div>
                         <div>
                           <p className="text-xs text-[var(--text-tertiary)]">Remaining</p>
-                          <p className={`font-semibold ${sale.balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                            {formatPKR(sale.balance)}
+                          <p className={`font-semibold ${financials.remainingBalance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                            {formatPKR(financials.remainingBalance)}
                           </p>
                         </div>
                         <div>
                           <p className="text-xs text-[var(--text-tertiary)]">Profit</p>
-                          <p className="font-semibold text-emerald-600">{formatPKR(sale.profit)}</p>
+                          <p className={`font-semibold ${financials.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {formatPKR(financials.profit)}
+                          </p>
                         </div>
                       </div>
                     </div>

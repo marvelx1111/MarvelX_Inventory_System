@@ -7,6 +7,7 @@ import {
   persistRowUpdate,
   type PersistResult,
 } from '@/data/supabase-sync';
+import { computeSaleFinancials } from '@/utils/sale';
 
 function ensurePersisted(result: PersistResult): void {
   if (!result.ok) throw new Error(result.error);
@@ -162,7 +163,20 @@ class DataStore {
   }
 
   hydrate(data: AppData): void {
-    this.data = data;
+    const vehiclesById = new Map(data.vehicles.map((v) => [v.vehicle_id, v]));
+    this.data = {
+      ...data,
+      sales: data.sales.map((sale) => {
+        const vehicle = vehiclesById.get(sale.vehicle_id);
+        const financials = computeSaleFinancials(sale, vehicle?.total_cost ?? 0);
+        return {
+          ...sale,
+          advance: financials.paymentReceived,
+          balance: financials.remainingBalance,
+          profit: financials.profit,
+        };
+      }),
+    };
     this.idCounters = this.buildIdCounters();
     this.revision += 1;
     this.notify();
@@ -554,10 +568,16 @@ class DataStore {
     if (!vehicle || !customer) return null;
     if (vehicle.status === 'sold') return null;
 
-    const sellingPrice = input.sale_price - input.discount;
-    const paymentReceived = Math.min(Math.max(0, input.advance), sellingPrice);
-    const balanceDue = Math.max(0, sellingPrice - paymentReceived);
-    const profit = sellingPrice - vehicle.total_cost;
+    const draft = {
+      sale_price: input.sale_price,
+      discount: input.discount,
+      advance: input.advance,
+      balance: 0,
+    };
+    const { paymentReceived, remainingBalance, profit } = computeSaleFinancials(
+      draft,
+      vehicle.total_cost,
+    );
 
     const sale: Sale = {
       sale_id: this.nextId('sal'),
@@ -567,14 +587,14 @@ class DataStore {
       sale_price: input.sale_price,
       discount: input.discount,
       advance: paymentReceived,
-      balance: balanceDue,
+      balance: remainingBalance,
       payment_method: input.payment_method,
       salesperson: input.salesperson,
       profit,
       remarks: input.remarks?.trim() ?? '',
     };
 
-    vehicle.status = balanceDue <= 0 ? 'sold' : 'booked';
+    vehicle.status = remainingBalance <= 0 && paymentReceived > 0 ? 'sold' : 'booked';
     this.data.sales.push(sale);
     this.revision += 1;
     this.notify();
@@ -596,8 +616,12 @@ class DataStore {
     };
 
     sale.balance = Math.max(0, sale.balance - payment.amount);
-    if (sale.balance === 0) {
-      const vehicle = this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id);
+    const vehicle = this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id);
+    const financials = computeSaleFinancials(sale, vehicle?.total_cost ?? 0);
+    sale.advance = financials.paymentReceived;
+    sale.balance = financials.remainingBalance;
+    sale.profit = financials.profit;
+    if (financials.isFullyPaid || financials.remainingBalance <= 0) {
       if (vehicle) vehicle.status = 'sold';
     }
 
@@ -664,22 +688,16 @@ class DataStore {
     if (normalized.profit !== undefined) normalized.profit = Number(normalized.profit);
 
     const sale = { ...this.data.sales[index], ...normalized };
-    if (updates.sale_price !== undefined || updates.discount !== undefined) {
-      const vehicle = this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id);
-      if (vehicle && updates.sale_price !== undefined) {
-        sale.profit = sale.sale_price - sale.discount - vehicle.total_cost;
-      }
-    }
-    if (updates.sale_price !== undefined || updates.discount !== undefined || updates.advance !== undefined) {
-      const sellingPrice = sale.sale_price - sale.discount;
-      const paymentReceived = Math.min(Math.max(0, sale.advance), sellingPrice);
-      sale.advance = paymentReceived;
-      sale.balance = Math.max(0, sellingPrice - paymentReceived);
-      sale.profit = sellingPrice - (this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id)?.total_cost ?? 0);
-      const vehicle = this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id);
-      if (vehicle) {
-        vehicle.status = sale.balance <= 0 ? 'sold' : 'booked';
-      }
+    const vehicle = this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id);
+    const financials = computeSaleFinancials(sale, vehicle?.total_cost ?? 0);
+    sale.advance = financials.paymentReceived;
+    sale.balance = financials.remainingBalance;
+    sale.profit = financials.profit;
+    if (vehicle) {
+      vehicle.status =
+        financials.isFullyPaid || (financials.remainingBalance <= 0 && financials.paymentReceived > 0)
+          ? 'sold'
+          : 'booked';
     }
 
     this.data.sales[index] = sale;

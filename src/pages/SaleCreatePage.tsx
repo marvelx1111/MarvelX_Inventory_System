@@ -72,7 +72,7 @@ export function SaleCreatePage() {
   const actualPrice = selectedVehicle?.purchase_price ?? 0;
   const totalCost = selectedVehicle?.total_cost ?? 0;
   const sellingAmount = Number(sellingPrice) || 0;
-  const paymentAmount = Number(paymentReceived) || 0;
+  const paymentAmount = Math.min(Number(paymentReceived) || 0, sellingAmount);
   const balanceDue = Math.max(0, sellingAmount - paymentAmount);
   const profit = selectedVehicle ? sellingAmount - totalCost : 0;
   const isFullPayment = sellingAmount > 0 && paymentAmount >= sellingAmount;
@@ -471,7 +471,7 @@ export function SaleCreatePage() {
                   </div>
                   <div>
                     <p className="text-xs text-[var(--text-tertiary)]">Selling price</p>
-                    <p className="text-lg font-bold text-accent">{formatPKR(sellingAmount)}</p>
+                    <p className="text-lg font-bold text-emerald-600">{formatPKR(sellingAmount)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-[var(--text-tertiary)]">Payment received</p>
