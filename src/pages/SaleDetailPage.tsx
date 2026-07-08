@@ -39,7 +39,8 @@ export function SaleDetailPage() {
     ? store.getCustomerById(acquisition.seller_customer_id)
     : undefined;
 
-  const soldFor = sale ? sale.sale_price - sale.discount : 0;
+  const sellingPrice = sale ? sale.sale_price - sale.discount : 0;
+  const actualPrice = vehicle?.purchase_price ?? 0;
   const isFullPayment = sale ? sale.balance <= 0 && sale.advance > 0 : false;
 
   const handleSaveSale = async (values: Record<string, string>) => {
@@ -155,7 +156,7 @@ export function SaleDetailPage() {
         <Badge variant={sale.balance <= 0 ? 'success' : 'warning'} dot>
           {sale.balance <= 0 ? (isFullPayment ? 'Full payment' : 'Settled') : `${formatPKR(sale.balance)} due`}
         </Badge>
-        <Badge variant="accent">Sold for: {formatPKR(soldFor)}</Badge>
+        <Badge variant="accent">Selling price: {formatPKR(sellingPrice)}</Badge>
         <Badge variant="info">Profit: {formatPKR(sale.profit)}</Badge>
         {vehicle && (
           <Link to={`/inventory/${vehicle.vehicle_id}`}>
@@ -169,12 +170,22 @@ export function SaleDetailPage() {
           <dl className="grid gap-4 sm:grid-cols-2">
               <InfoItem label="Sale date" value={formatDate(sale.sale_date)} />
               <InfoItem label="Salesperson" value={sale.salesperson} />
-              <InfoItem label="Car price" value={formatPKR(sale.sale_price)} />
-              <InfoItem label="Discount" value={formatPKR(sale.discount)} />
-              <InfoItem label="Sold for" value={formatPKR(soldFor)} highlight="accent" />
-              <InfoItem label="Token / payment received" value={formatPKR(sale.advance)} />
+              {vehicle && (
+                <InfoItem label="Actual price (bought for)" value={formatPKR(actualPrice)} />
+              )}
+              <InfoItem label="Selling price" value={formatPKR(sellingPrice)} highlight="accent" />
+              {sale.discount > 0 && (
+                <InfoItem label="Discount" value={formatPKR(sale.discount)} />
+              )}
+              <InfoItem
+                label="Token / advance"
+                value={sale.advance > 0 ? formatPKR(sale.advance) : 'None'}
+              />
               <InfoItem label="Balance due" value={formatPKR(sale.balance)} />
               <InfoItem label="Payment method" value={sale.payment_method.replace('_', ' ')} />
+              {vehicle && vehicle.total_cost > actualPrice && (
+                <InfoItem label="Total cost (incl. expenses)" value={formatPKR(vehicle.total_cost)} />
+              )}
               {sale.remarks && (
                 <div className="sm:col-span-2">
                   <InfoItem label="Remarks" value={sale.remarks} />
@@ -232,12 +243,18 @@ export function SaleDetailPage() {
             <CardTitle>Payment Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <SummaryRow label="Car price" value={formatPKR(sale.sale_price)} />
+            {vehicle && (
+              <SummaryRow label="Actual price (bought for)" value={formatPKR(actualPrice)} />
+            )}
+            <SummaryRow label="Selling price" value={formatPKR(sellingPrice)} highlight="accent" />
             {sale.discount > 0 && (
               <SummaryRow label="Discount" value={`− ${formatPKR(sale.discount)}`} />
             )}
-            <SummaryRow label="Sold for" value={formatPKR(soldFor)} highlight="accent" />
-            <SummaryRow label="Token received" value={formatPKR(sale.advance)} highlight="success" />
+            <SummaryRow
+              label="Token / advance"
+              value={sale.advance > 0 ? formatPKR(sale.advance) : 'None'}
+              highlight={sale.advance > 0 ? 'success' : undefined}
+            />
             <SummaryRow
               label="Balance due"
               value={formatPKR(sale.balance)}

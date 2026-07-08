@@ -50,9 +50,9 @@ export const VEHICLE_EDIT_FIELDS: EditFieldConfig[] = [
 
 export const SALE_EDIT_FIELDS: EditFieldConfig[] = [
   { key: 'sale_date', label: 'Sale date', type: 'date', required: true },
-  { key: 'sale_price', label: 'Car price (PKR)', type: 'number', required: true },
+  { key: 'sale_price', label: 'Selling price (PKR)', type: 'number', required: true },
   { key: 'discount', label: 'Discount (PKR)', type: 'number' },
-  { key: 'advance', label: 'Token / payment received (PKR)', type: 'number' },
+  { key: 'advance', label: 'Token / advance (PKR)', type: 'number' },
   { key: 'salesperson', label: 'Salesperson', required: true },
   {
     key: 'payment_method',

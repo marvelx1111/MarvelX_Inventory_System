@@ -104,14 +104,16 @@ export function SalesPage() {
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center gap-4 sm:text-right">
                         <div>
-                          <p className="text-xs text-[var(--text-tertiary)]">Sold for</p>
+                          <p className="text-xs text-[var(--text-tertiary)]">Selling price</p>
                           <p className="font-semibold text-accent">
                             {formatPKR(sale.sale_price - sale.discount)}
                           </p>
                         </div>
                         <div>
                           <p className="text-xs text-[var(--text-tertiary)]">Token</p>
-                          <p className="font-semibold text-emerald-600">{formatPKR(sale.advance)}</p>
+                          <p className="font-semibold text-emerald-600">
+                            {sale.advance > 0 ? formatPKR(sale.advance) : '—'}
+                          </p>
                         </div>
                         <div>
                           <p className="text-xs text-[var(--text-tertiary)]">Balance due</p>

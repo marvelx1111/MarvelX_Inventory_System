@@ -59,9 +59,8 @@ export function SaleCreatePage() {
   const [newCustomer, setNewCustomer] = useState(EMPTY_NEW_CUSTOMER);
 
   const [saleDate, setSaleDate] = useState(new Date().toISOString().slice(0, 10));
-  const [salePrice, setSalePrice] = useState('');
-  const [discount, setDiscount] = useState('0');
-  const [token, setToken] = useState('0');
+  const [sellingPrice, setSellingPrice] = useState('');
+  const [token, setToken] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bank_transfer');
   const [saleRemarks, setSaleRemarks] = useState('');
 
@@ -70,13 +69,13 @@ export function SaleCreatePage() {
   const selectedVehicle = store.getVehicleById(vehicleId);
   const selectedCustomer = store.getCustomerById(customerId);
 
-  const carPrice = Number(salePrice) || 0;
-  const discountAmount = Number(discount) || 0;
+  const actualPrice = selectedVehicle?.purchase_price ?? 0;
+  const totalCost = selectedVehicle?.total_cost ?? 0;
+  const sellingAmount = Number(sellingPrice) || 0;
   const tokenAmount = Number(token) || 0;
-  const soldFor = Math.max(0, carPrice - discountAmount);
-  const balanceDue = Math.max(0, soldFor - tokenAmount);
-  const profit = selectedVehicle ? soldFor - selectedVehicle.total_cost : 0;
-  const isFullPayment = soldFor > 0 && tokenAmount >= soldFor;
+  const balanceDue = Math.max(0, sellingAmount - tokenAmount);
+  const profit = selectedVehicle ? sellingAmount - totalCost : 0;
+  const isFullPayment = sellingAmount > 0 && tokenAmount >= sellingAmount;
 
   const canProceed = useMemo(() => {
     if (step === 0) return !!vehicleId;
@@ -85,8 +84,8 @@ export function SaleCreatePage() {
         ? !!newCustomer.full_name.trim() && !!newCustomer.mobile.trim()
         : !!customerId;
     }
-    return !!salePrice && Number(salePrice) > 0;
-  }, [step, vehicleId, customerId, showNewCustomer, newCustomer, salePrice]);
+    return !!sellingPrice && Number(sellingPrice) > 0;
+  }, [step, vehicleId, customerId, showNewCustomer, newCustomer, sellingPrice]);
 
   const handleNext = async () => {
     if (!canProceed) {
@@ -120,8 +119,8 @@ export function SaleCreatePage() {
   const handleSubmit = () => {
     if (!selectedVehicle || !customerId) return;
 
-    if (tokenAmount > soldFor) {
-      error('Token too high', `Token cannot exceed sold price of ${formatPKR(soldFor)}`);
+    if (tokenAmount > sellingAmount) {
+      error('Token too high', `Token cannot exceed selling price of ${formatPKR(sellingAmount)}`);
       return;
     }
 
@@ -132,8 +131,8 @@ export function SaleCreatePage() {
           vehicle_id: vehicleId,
           customer_id: customerId,
           sale_date: saleDate,
-          sale_price: carPrice,
-          discount: discountAmount,
+          sale_price: sellingAmount,
+          discount: 0,
           advance: tokenAmount,
           payment_method: paymentMethod,
           salesperson: user?.full_name ?? 'Staff',
@@ -248,7 +247,15 @@ export function SaleCreatePage() {
                         <p className="font-medium text-[var(--text-primary)]">
                           {v.make} {v.model} {v.model_year}
                         </p>
-                        <p className="mt-1 text-sm text-accent">{formatPKR(v.total_cost)}</p>
+                        <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                          Bought for {formatPKR(v.purchase_price)}
+                          {v.total_cost > v.purchase_price && (
+                            <span className="text-[var(--text-tertiary)]">
+                              {' '}
+                              · Total cost {formatPKR(v.total_cost)}
+                            </span>
+                          )}
+                        </p>
                       </button>
                     ))}
                   </div>
@@ -381,16 +388,32 @@ export function SaleCreatePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {selectedVehicle && (
-                  <div className="rounded-lg bg-[var(--bg-tertiary)] p-3 text-sm">
-                    <span className="text-[var(--text-secondary)]">Vehicle cost: </span>
-                    <strong>{formatPKR(selectedVehicle.total_cost)}</strong>
-                    {selectedCustomer && (
-                      <>
-                        {' · '}
-                        <span className="text-[var(--text-secondary)]">Buyer: </span>
-                        <strong>{selectedCustomer.full_name}</strong>
-                      </>
-                    )}
+                  <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-tertiary)] p-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
+                          Actual price (bought for)
+                        </p>
+                        <p className="mt-1 text-lg font-bold text-[var(--text-primary)]">
+                          {formatPKR(actualPrice)}
+                        </p>
+                        {totalCost > actualPrice && (
+                          <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">
+                            Total cost incl. expenses: {formatPKR(totalCost)}
+                          </p>
+                        )}
+                      </div>
+                      {selectedCustomer && (
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
+                            Buyer
+                          </p>
+                          <p className="mt-1 text-lg font-bold text-[var(--text-primary)]">
+                            {selectedCustomer.full_name}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -408,28 +431,28 @@ export function SaleCreatePage() {
                     options={PAYMENT_OPTIONS}
                   />
                   <Input
-                    label="Car price (PKR)"
+                    label="Selling price (PKR)"
                     type="number"
                     required
                     min={0}
-                    value={salePrice}
-                    onChange={(e) => setSalePrice(e.target.value)}
-                    hint="Agreed selling price of the vehicle"
+                    value={sellingPrice}
+                    onChange={(e) => setSellingPrice(e.target.value)}
+                    hint="Price you are selling the car for"
                   />
                   <Input
-                    label="Discount (PKR)"
-                    type="number"
-                    min={0}
-                    value={discount}
-                    onChange={(e) => setDiscount(e.target.value)}
-                  />
-                  <Input
-                    label="Token / payment received (PKR)"
+                    label="Token / advance (PKR)"
                     type="number"
                     min={0}
                     value={token}
                     onChange={(e) => setToken(e.target.value)}
-                    hint={isFullPayment ? 'Full payment received' : 'Amount paid at booking'}
+                    placeholder="Optional"
+                    hint={
+                      token === ''
+                        ? 'Leave empty if no token taken yet'
+                        : isFullPayment
+                          ? 'Full payment received'
+                          : 'Partial payment at booking'
+                    }
                   />
                 </div>
 
@@ -443,16 +466,18 @@ export function SaleCreatePage() {
 
                 <div className="grid gap-3 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-tertiary)] p-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <p className="text-xs text-[var(--text-tertiary)]">Car price</p>
-                    <p className="text-lg font-bold text-[var(--text-primary)]">{formatPKR(carPrice)}</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Actual price</p>
+                    <p className="text-lg font-bold text-[var(--text-primary)]">{formatPKR(actualPrice)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-[var(--text-tertiary)]">Sold for</p>
-                    <p className="text-lg font-bold text-accent">{formatPKR(soldFor)}</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Selling price</p>
+                    <p className="text-lg font-bold text-accent">{formatPKR(sellingAmount)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-[var(--text-tertiary)]">Token received</p>
-                    <p className="text-lg font-bold text-emerald-600">{formatPKR(tokenAmount)}</p>
+                    <p className="text-lg font-bold text-emerald-600">
+                      {tokenAmount > 0 ? formatPKR(tokenAmount) : '—'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-[var(--text-tertiary)]">Balance due</p>
