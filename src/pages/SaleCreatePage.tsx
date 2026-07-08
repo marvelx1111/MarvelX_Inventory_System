@@ -73,9 +73,14 @@ export function SaleCreatePage() {
   const totalCost = selectedVehicle?.total_cost ?? 0;
   const sellingAmount = Number(sellingPrice) || 0;
   const paymentAmount = Math.min(Number(paymentReceived) || 0, sellingAmount);
-  const balanceDue = Math.max(0, sellingAmount - paymentAmount);
+  const customerOwed = Math.max(0, sellingAmount - paymentAmount);
+  const isLossSale = sellingAmount > 0 && sellingAmount < totalCost;
+  const remainingBalance = isLossSale
+    ? Math.max(0, totalCost - paymentAmount)
+    : customerOwed;
   const profit = selectedVehicle ? sellingAmount - totalCost : 0;
   const isFullPayment = sellingAmount > 0 && paymentAmount >= sellingAmount;
+  const remainingLabel = isLossSale ? 'Remaining to break even' : 'Remaining balance';
 
   const canProceed = useMemo(() => {
     if (step === 0) return !!vehicleId;
@@ -451,7 +456,7 @@ export function SaleCreatePage() {
                         ? 'Leave empty if no payment yet — you can update this later'
                         : isFullPayment
                           ? 'Full payment received'
-                          : `Remaining after this payment: ${formatPKR(balanceDue)}`
+                          : `Remaining after this payment: ${formatPKR(customerOwed)}`
                     }
                   />
                 </div>
@@ -480,9 +485,9 @@ export function SaleCreatePage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-[var(--text-tertiary)]">Remaining balance</p>
-                    <p className={`text-lg font-bold ${balanceDue > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      {formatPKR(balanceDue)}
+                    <p className="text-xs text-[var(--text-tertiary)]">{remainingLabel}</p>
+                    <p className={`text-lg font-bold ${remainingBalance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      {formatPKR(remainingBalance)}
                     </p>
                   </div>
                   {sellingAmount > 0 && (

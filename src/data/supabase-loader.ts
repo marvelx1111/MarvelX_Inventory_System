@@ -96,7 +96,7 @@ export async function fetchAllFromSupabase(client: SupabaseClient): Promise<AppD
     return {
       ...normalized,
       advance: financials.paymentReceived,
-      balance: financials.remainingBalance,
+      balance: financials.customerOwed,
       profit: financials.profit,
     };
   });

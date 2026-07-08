@@ -50,10 +50,14 @@ export function SaleDetailPage() {
 
   const sellingPrice = financials?.sellingPrice ?? 0;
   const paymentReceived = financials?.paymentReceived ?? 0;
+  const customerOwed = financials?.customerOwed ?? 0;
   const remainingBalance = financials?.remainingBalance ?? 0;
   const profit = financials?.profit ?? 0;
   const isFullPayment = financials?.isFullyPaid ?? false;
+  const isLossSale = financials?.isLossSale ?? false;
+  const totalCost = vehicle?.total_cost ?? 0;
   const actualPrice = vehicle?.purchase_price ?? 0;
+  const remainingLabel = isLossSale ? 'Remaining to break even' : 'Remaining balance';
 
   const handleSaveSale = async (values: Record<string, string>) => {
     if (!sale) return;
@@ -222,7 +226,9 @@ export function SaleDetailPage() {
             ? isFullPayment
               ? 'Fully paid'
               : 'Settled'
-            : `${formatPKR(remainingBalance)} remaining`}
+            : isLossSale
+              ? `${formatPKR(remainingBalance)} to break even`
+              : `${formatPKR(remainingBalance)} remaining`}
         </Badge>
         <Badge variant="success">Selling price: {formatPKR(sellingPrice)}</Badge>
         <Badge variant={profit >= 0 ? 'success' : 'accent'}>
@@ -249,13 +255,13 @@ export function SaleDetailPage() {
                 value={paymentReceived > 0 ? formatPKR(paymentReceived) : 'None yet'}
               />
               <InfoItem
-                label="Remaining balance"
+                label={remainingLabel}
                 value={formatPKR(remainingBalance)}
                 highlight={remainingBalance > 0 ? 'warning' : 'success'}
               />
               <InfoItem label="Payment method" value={sale.payment_method.replace('_', ' ')} />
-              {vehicle && vehicle.total_cost > actualPrice && (
-                <InfoItem label="Total cost (incl. expenses)" value={formatPKR(vehicle.total_cost)} />
+              {vehicle && (
+                <InfoItem label="Total cost (incl. expenses)" value={formatPKR(totalCost)} />
               )}
               {sale.remarks && (
                 <div className="sm:col-span-2">
@@ -324,7 +330,7 @@ export function SaleDetailPage() {
               highlight={paymentReceived > 0 ? 'success' : undefined}
             />
             <SummaryRow
-              label="Remaining balance"
+              label={remainingLabel}
               value={formatPKR(remainingBalance)}
               highlight={remainingBalance > 0 ? 'warning' : 'success'}
             />
@@ -338,14 +344,14 @@ export function SaleDetailPage() {
           </CardContent>
         </Card>
 
-        {remainingBalance > 0 && (
+        {customerOwed > 0 && (
           <Card padding="md" className="no-print lg:col-span-3">
             <CardHeader>
               <CardTitle>Record payment</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="mb-4 text-sm text-[var(--text-secondary)]">
-                Customer still owes <strong className="text-amber-600">{formatPKR(remainingBalance)}</strong>.
+                Customer still owes <strong className="text-amber-600">{formatPKR(customerOwed)}</strong>.
                 Enter the <strong>total payment received so far</strong> (including any token paid earlier).
               </p>
               <form onSubmit={handleRecordPayment} className="flex flex-col gap-3 sm:flex-row sm:items-end">

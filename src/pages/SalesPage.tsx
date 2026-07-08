@@ -15,8 +15,8 @@ import { usePageLoading } from './hooks/usePageLoading';
 
 function getSaleStatus(sale: ReturnType<typeof store.getSales>[number]) {
   const vehicle = store.getVehicleById(sale.vehicle_id);
-  const { remainingBalance } = computeSaleFinancials(sale, vehicle?.total_cost ?? 0);
-  if (remainingBalance <= 0) return { label: 'Paid', variant: 'success' as const };
+  const financials = computeSaleFinancials(sale, vehicle?.total_cost ?? 0);
+  if (financials.isFullyPaid) return { label: 'Paid', variant: 'success' as const };
   if (vehicle?.status === 'booked') return { label: 'Booked', variant: 'warning' as const };
   return { label: 'Pending', variant: 'info' as const };
 }

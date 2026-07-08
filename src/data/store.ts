@@ -172,7 +172,7 @@ class DataStore {
         return {
           ...sale,
           advance: financials.paymentReceived,
-          balance: financials.remainingBalance,
+          balance: financials.customerOwed,
           profit: financials.profit,
         };
       }),
@@ -574,7 +574,7 @@ class DataStore {
       advance: input.advance,
       balance: 0,
     };
-    const { paymentReceived, remainingBalance, profit } = computeSaleFinancials(
+    const { paymentReceived, customerOwed, profit, isFullyPaid } = computeSaleFinancials(
       draft,
       vehicle.total_cost,
     );
@@ -587,14 +587,14 @@ class DataStore {
       sale_price: input.sale_price,
       discount: input.discount,
       advance: paymentReceived,
-      balance: remainingBalance,
+      balance: customerOwed,
       payment_method: input.payment_method,
       salesperson: input.salesperson,
       profit,
       remarks: input.remarks?.trim() ?? '',
     };
 
-    vehicle.status = remainingBalance <= 0 && paymentReceived > 0 ? 'sold' : 'booked';
+    vehicle.status = isFullyPaid ? 'sold' : 'booked';
     this.data.sales.push(sale);
     this.revision += 1;
     this.notify();
@@ -619,9 +619,9 @@ class DataStore {
     const vehicle = this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id);
     const financials = computeSaleFinancials(sale, vehicle?.total_cost ?? 0);
     sale.advance = financials.paymentReceived;
-    sale.balance = financials.remainingBalance;
+    sale.balance = financials.customerOwed;
     sale.profit = financials.profit;
-    if (financials.isFullyPaid || financials.remainingBalance <= 0) {
+    if (financials.isFullyPaid || financials.customerOwed <= 0) {
       if (vehicle) vehicle.status = 'sold';
     }
 
@@ -691,11 +691,11 @@ class DataStore {
     const vehicle = this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id);
     const financials = computeSaleFinancials(sale, vehicle?.total_cost ?? 0);
     sale.advance = financials.paymentReceived;
-    sale.balance = financials.remainingBalance;
+    sale.balance = financials.customerOwed;
     sale.profit = financials.profit;
     if (vehicle) {
       vehicle.status =
-        financials.isFullyPaid || (financials.remainingBalance <= 0 && financials.paymentReceived > 0)
+        financials.isFullyPaid || (financials.customerOwed <= 0 && financials.paymentReceived > 0)
           ? 'sold'
           : 'booked';
     }
