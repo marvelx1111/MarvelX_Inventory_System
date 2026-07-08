@@ -61,17 +61,22 @@ export function SaleCreatePage() {
   const [saleDate, setSaleDate] = useState(new Date().toISOString().slice(0, 10));
   const [salePrice, setSalePrice] = useState('');
   const [discount, setDiscount] = useState('0');
-  const [advance, setAdvance] = useState('0');
+  const [token, setToken] = useState('0');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bank_transfer');
+  const [saleRemarks, setSaleRemarks] = useState('');
 
   const availableVehicles = store.getVehicles().filter((v) => v.status === 'in_stock');
   const customers = store.getCustomers();
   const selectedVehicle = store.getVehicleById(vehicleId);
   const selectedCustomer = store.getCustomerById(customerId);
 
-  const netPrice = Number(salePrice) - Number(discount);
-  const balance = Math.max(0, netPrice - Number(advance));
-  const profit = selectedVehicle ? netPrice - selectedVehicle.total_cost : 0;
+  const carPrice = Number(salePrice) || 0;
+  const discountAmount = Number(discount) || 0;
+  const tokenAmount = Number(token) || 0;
+  const soldFor = Math.max(0, carPrice - discountAmount);
+  const balanceDue = Math.max(0, soldFor - tokenAmount);
+  const profit = selectedVehicle ? soldFor - selectedVehicle.total_cost : 0;
+  const isFullPayment = soldFor > 0 && tokenAmount >= soldFor;
 
   const canProceed = useMemo(() => {
     if (step === 0) return !!vehicleId;
@@ -115,6 +120,11 @@ export function SaleCreatePage() {
   const handleSubmit = () => {
     if (!selectedVehicle || !customerId) return;
 
+    if (tokenAmount > soldFor) {
+      error('Token too high', `Token cannot exceed sold price of ${formatPKR(soldFor)}`);
+      return;
+    }
+
     setSubmitting(true);
     void (async () => {
       try {
@@ -122,11 +132,12 @@ export function SaleCreatePage() {
           vehicle_id: vehicleId,
           customer_id: customerId,
           sale_date: saleDate,
-          sale_price: Number(salePrice),
-          discount: Number(discount),
-          advance: Number(advance),
+          sale_price: carPrice,
+          discount: discountAmount,
+          advance: tokenAmount,
           payment_method: paymentMethod,
           salesperson: user?.full_name ?? 'Staff',
+          remarks: saleRemarks,
         });
 
         if (!sale) {
@@ -320,6 +331,15 @@ export function SaleCreatePage() {
                         onChange={(e) => setNewCustomer((p) => ({ ...p, address: e.target.value }))}
                       />
                     </div>
+                    <div className="sm:col-span-2">
+                      <Textarea
+                        label="Remarks"
+                        rows={2}
+                        value={newCustomer.remarks}
+                        onChange={(e) => setNewCustomer((p) => ({ ...p, remarks: e.target.value }))}
+                        placeholder="Notes about this customer"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="grid gap-2 sm:grid-cols-2">
@@ -388,12 +408,13 @@ export function SaleCreatePage() {
                     options={PAYMENT_OPTIONS}
                   />
                   <Input
-                    label="Sale price (PKR)"
+                    label="Car price (PKR)"
                     type="number"
                     required
                     min={0}
                     value={salePrice}
                     onChange={(e) => setSalePrice(e.target.value)}
+                    hint="Agreed selling price of the vehicle"
                   />
                   <Input
                     label="Discount (PKR)"
@@ -403,26 +424,43 @@ export function SaleCreatePage() {
                     onChange={(e) => setDiscount(e.target.value)}
                   />
                   <Input
-                    label="Advance (PKR)"
+                    label="Token / payment received (PKR)"
                     type="number"
                     min={0}
-                    value={advance}
-                    onChange={(e) => setAdvance(e.target.value)}
+                    value={token}
+                    onChange={(e) => setToken(e.target.value)}
+                    hint={isFullPayment ? 'Full payment received' : 'Amount paid at booking'}
                   />
                 </div>
 
-                <div className="grid gap-3 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-tertiary)] p-4 sm:grid-cols-3">
+                <Textarea
+                  label="Remarks"
+                  rows={2}
+                  value={saleRemarks}
+                  onChange={(e) => setSaleRemarks(e.target.value)}
+                  placeholder="Notes about this sale"
+                />
+
+                <div className="grid gap-3 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-tertiary)] p-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <p className="text-xs text-[var(--text-tertiary)]">Net price</p>
-                    <p className="text-lg font-bold text-[var(--text-primary)]">{formatPKR(netPrice)}</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Car price</p>
+                    <p className="text-lg font-bold text-[var(--text-primary)]">{formatPKR(carPrice)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--text-tertiary)]">Sold for</p>
+                    <p className="text-lg font-bold text-accent">{formatPKR(soldFor)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--text-tertiary)]">Token received</p>
+                    <p className="text-lg font-bold text-emerald-600">{formatPKR(tokenAmount)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-[var(--text-tertiary)]">Balance due</p>
-                    <p className={`text-lg font-bold ${balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      {formatPKR(balance)}
+                    <p className={`text-lg font-bold ${balanceDue > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      {formatPKR(balanceDue)}
                     </p>
                   </div>
-                  <div>
+                  <div className="sm:col-span-2 lg:col-span-4">
                     <p className="text-xs text-[var(--text-tertiary)]">Estimated profit</p>
                     <p className={`text-lg font-bold ${profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {formatPKR(profit)}

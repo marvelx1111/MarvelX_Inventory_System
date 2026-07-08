@@ -707,6 +707,7 @@ export function createSeedData(): AppData {
         payment_method: 'bank_transfer',
         salesperson: 'Bilal Khan',
         profit: 432000,
+        remarks: 'Token booking — balance pending',
       },
       {
         sale_id: 'sal_002',
@@ -715,11 +716,12 @@ export function createSeedData(): AppData {
         sale_date: '2025-01-15',
         sale_price: 7200000,
         discount: 100000,
-        advance: 7200000,
+        advance: 7100000,
         balance: 0,
         payment_method: 'cash',
         salesperson: 'Bilal Khan',
         profit: 520000,
+        remarks: 'Full payment on delivery',
       },
       {
         sale_id: 'sal_003',
@@ -733,6 +735,7 @@ export function createSeedData(): AppData {
         payment_method: 'cheque',
         salesperson: 'Bilal Khan',
         profit: 0,
+        remarks: 'Token received via cheque',
       },
       {
         sale_id: 'sal_004',
@@ -746,6 +749,7 @@ export function createSeedData(): AppData {
         payment_method: 'bank_transfer',
         salesperson: 'Bilal Khan',
         profit: 0,
+        remarks: 'Corporate fleet booking',
       },
     ],
 

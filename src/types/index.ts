@@ -134,6 +134,7 @@ export interface Sale {
   payment_method: PaymentMethod;
   salesperson: string;
   profit: number;
+  remarks: string;
 }
 
 export interface SalePayment {
@@ -381,6 +382,7 @@ export type CreateSaleInput = {
   advance: number;
   payment_method: PaymentMethod;
   salesperson: string;
+  remarks?: string;
 };
 
 export type CreateCustomerInput = Omit<Customer, 'customer_id' | 'created_at'>;

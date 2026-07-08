@@ -87,6 +87,7 @@ export async function fetchAllFromSupabase(client: SupabaseClient): Promise<AppD
     advance: num(s.advance),
     balance: num(s.balance),
     profit: num(s.profit),
+    remarks: String(s.remarks ?? ''),
   }));
 
   result.vehicleDocuments = result.vehicleDocuments.map((d) => ({

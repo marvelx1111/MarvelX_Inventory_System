@@ -554,8 +554,10 @@ class DataStore {
     if (!vehicle || !customer) return null;
     if (vehicle.status === 'sold') return null;
 
-    const balance = input.sale_price - input.discount - input.advance;
-    const profit = input.sale_price - input.discount - vehicle.total_cost;
+    const netCarPrice = input.sale_price - input.discount;
+    const tokenReceived = Math.min(Math.max(0, input.advance), netCarPrice);
+    const balanceDue = Math.max(0, netCarPrice - tokenReceived);
+    const profit = netCarPrice - vehicle.total_cost;
 
     const sale: Sale = {
       sale_id: this.nextId('sal'),
@@ -564,25 +566,18 @@ class DataStore {
       sale_date: input.sale_date,
       sale_price: input.sale_price,
       discount: input.discount,
-      advance: input.advance,
-      balance: Math.max(0, balance),
+      advance: tokenReceived,
+      balance: balanceDue,
       payment_method: input.payment_method,
       salesperson: input.salesperson,
       profit,
+      remarks: input.remarks?.trim() ?? '',
     };
 
-    vehicle.status = balance <= 0 ? 'sold' : 'booked';
+    vehicle.status = balanceDue <= 0 ? 'sold' : 'booked';
     this.data.sales.push(sale);
-
-    if (input.advance > 0) {
-      this.addSalePayment(sale.sale_id, {
-        payment_date: input.sale_date,
-        amount: input.advance,
-        payment_method: input.payment_method,
-        reference_number: `ADV-${sale.sale_id}`,
-        notes: 'Advance payment at booking',
-      });
-    }
+    this.revision += 1;
+    this.notify();
 
     return sale;
   }
@@ -676,11 +671,14 @@ class DataStore {
       }
     }
     if (updates.sale_price !== undefined || updates.discount !== undefined || updates.advance !== undefined) {
-      const net = sale.sale_price - sale.discount;
-      const paid = this.data.salePayments
-        .filter((p) => p.sale_id === saleId)
-        .reduce((sum, p) => sum + p.amount, 0);
-      sale.balance = Math.max(0, net - paid);
+      const netCarPrice = sale.sale_price - sale.discount;
+      const tokenReceived = Math.min(Math.max(0, sale.advance), netCarPrice);
+      sale.advance = tokenReceived;
+      sale.balance = Math.max(0, netCarPrice - tokenReceived);
+      const vehicle = this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id);
+      if (vehicle) {
+        vehicle.status = sale.balance <= 0 ? 'sold' : 'booked';
+      }
     }
 
     this.data.sales[index] = sale;
@@ -693,6 +691,7 @@ class DataStore {
       payment_method: sale.payment_method,
       salesperson: sale.salesperson,
       profit: sale.profit,
+      remarks: sale.remarks,
     }));
     return sale;
   }
