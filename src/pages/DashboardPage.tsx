@@ -18,7 +18,7 @@ const KPI_CONFIG = [
     format: (v: number) => String(v),
     suffix: '',
     link: '/inventory',
-    accent: 'text-indigo-600 dark:text-indigo-400',
+    accent: 'text-red-600 dark:text-red-400',
   },
   {
     key: 'monthlySales',

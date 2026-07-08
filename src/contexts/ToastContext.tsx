@@ -53,9 +53,9 @@ const variantStyles: Record<ToastVariant, { icon: string; bar: string; bg: strin
     bg: 'bg-[var(--bg-elevated)] border-amber-200/60 dark:border-amber-900/40',
   },
   info: {
-    icon: 'text-indigo-600 dark:text-indigo-400',
-    bar: 'bg-indigo-500',
-    bg: 'bg-[var(--bg-elevated)] border-indigo-200/60 dark:border-indigo-900/40',
+    icon: 'text-red-600 dark:text-red-400',
+    bar: 'bg-red-600',
+    bg: 'bg-[var(--bg-elevated)] border-red-200/60 dark:border-red-900/40',
   },
 };
 

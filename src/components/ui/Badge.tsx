@@ -17,7 +17,7 @@ const variantClasses: Record<BadgeVariant, string> = {
   warning: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
   danger: 'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400',
   info: 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400',
-  accent: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400',
+  accent: 'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400',
 };
 
 const dotClasses: Record<BadgeVariant, string> = {
@@ -26,7 +26,7 @@ const dotClasses: Record<BadgeVariant, string> = {
   warning: 'bg-amber-500',
   danger: 'bg-red-500',
   info: 'bg-blue-500',
-  accent: 'bg-indigo-500',
+  accent: 'bg-red-600',
 };
 
 export function Badge({

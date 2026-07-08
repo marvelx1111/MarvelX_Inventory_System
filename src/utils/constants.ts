@@ -129,14 +129,14 @@ export const PPF_STATUS_CONFIG: Record<
   },
   delivered: {
     label: 'Delivered',
-    color: 'text-indigo-700 dark:text-indigo-400',
-    bgColor: 'bg-indigo-50 dark:bg-indigo-950/40',
-    dotColor: 'bg-indigo-500',
+    color: 'text-red-700 dark:text-red-400',
+    bgColor: 'bg-red-50 dark:bg-red-950/40',
+    dotColor: 'bg-red-600',
   },
 };
 
 export const BRAND = {
   name: 'Marvel X',
   tagline: 'Dealership ERP',
-  accent: '#6366F1',
+  accent: '#CD1719',
 } as const;

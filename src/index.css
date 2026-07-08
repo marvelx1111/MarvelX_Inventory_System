@@ -4,17 +4,18 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
-  --color-accent: #6366f1;
-  --color-accent-hover: #4f46e5;
-  --color-accent-muted: #818cf8;
-  --color-accent-subtle: #eef2ff;
+  /* Marvelx.pk brand red */
+  --color-accent: #cd1719;
+  --color-accent-hover: #a81216;
+  --color-accent-muted: #e03e3e;
+  --color-accent-subtle: #fdf2f2;
 
-  --color-success: #10b981;
-  --color-success-subtle: #ecfdf5;
+  --color-success: #8bbd65;
+  --color-success-subtle: #f0f7eb;
   --color-warning: #f59e0b;
   --color-warning-subtle: #fffbeb;
-  --color-danger: #ef4444;
-  --color-danger-subtle: #fef2f2;
+  --color-danger: #cd1719;
+  --color-danger-subtle: #fdf2f2;
   --color-info: #3b82f6;
   --color-info-subtle: #eff6ff;
 
@@ -31,56 +32,56 @@
 :root {
   color-scheme: light;
 
-  --bg-primary: #fafafa;
+  --bg-primary: #f6f6f6;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f4f4f5;
+  --bg-tertiary: #f9f9f9;
   --bg-elevated: #ffffff;
   --bg-sidebar: #ffffff;
-  --bg-hover: #f4f4f5;
-  --bg-active: #eef2ff;
+  --bg-hover: #f0f0f0;
+  --bg-active: #fdf2f2;
 
-  --text-primary: #18181b;
-  --text-secondary: #52525b;
-  --text-tertiary: #a1a1aa;
+  --text-primary: #121212;
+  --text-secondary: #525252;
+  --text-tertiary: #a3a3a3;
   --text-inverse: #ffffff;
 
-  --border-primary: #e4e4e7;
-  --border-secondary: #f4f4f5;
-  --border-focus: #6366f1;
+  --border-primary: #e5e5e5;
+  --border-secondary: #f0f0f0;
+  --border-focus: #cd1719;
 
-  --gradient-brand: linear-gradient(135deg, #6366f1 0%, #818cf8 50%, #a5b4fc 100%);
-  --gradient-surface: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-  --gradient-sidebar: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  --gradient-brand: linear-gradient(135deg, #cd1719 0%, #cc2127 50%, #e03e3e 100%);
+  --gradient-surface: linear-gradient(180deg, #ffffff 0%, #f6f6f6 100%);
+  --gradient-sidebar: linear-gradient(180deg, #ffffff 0%, #f6f6f6 100%);
 }
 
 .dark {
   color-scheme: dark;
 
-  --bg-primary: #09090b;
-  --bg-secondary: #18181b;
-  --bg-tertiary: #27272a;
-  --bg-elevated: #18181b;
-  --bg-sidebar: #18181b;
-  --bg-hover: #27272a;
-  --bg-active: #312e81;
+  --bg-primary: #121212;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #262626;
+  --bg-elevated: #1a1a1a;
+  --bg-sidebar: #1a1a1a;
+  --bg-hover: #262626;
+  --bg-active: #3d1517;
 
   --text-primary: #fafafa;
-  --text-secondary: #a1a1aa;
-  --text-tertiary: #71717a;
+  --text-secondary: #a3a3a3;
+  --text-tertiary: #737373;
   --text-inverse: #ffffff;
 
-  --border-primary: #3f3f46;
-  --border-secondary: #27272a;
-  --border-focus: #818cf8;
+  --border-primary: #404040;
+  --border-secondary: #262626;
+  --border-focus: #e03e3e;
 
-  --gradient-brand: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%);
-  --gradient-surface: linear-gradient(180deg, #18181b 0%, #09090b 100%);
-  --gradient-sidebar: linear-gradient(180deg, #18181b 0%, #09090b 100%);
+  --gradient-brand: linear-gradient(135deg, #cd1719 0%, #a81216 50%, #8b1014 100%);
+  --gradient-surface: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
+  --gradient-sidebar: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
 
-  --color-accent-subtle: #1e1b4b;
-  --color-success-subtle: #052e16;
+  --color-accent-subtle: #3d1517;
+  --color-success-subtle: #1a2e12;
   --color-warning-subtle: #451a03;
-  --color-danger-subtle: #450a0a;
+  --color-danger-subtle: #3d1517;
   --color-info-subtle: #172554;
 }
 

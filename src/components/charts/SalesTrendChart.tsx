@@ -65,8 +65,8 @@ export function SalesTrendChart({
             <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6366F1" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#6366F1" stopOpacity={0.02} />
+                  <stop offset="0%" stopColor="#CD1719" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#CD1719" stopOpacity={0.02} />
                 </linearGradient>
                 <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#10B981" stopOpacity={0.25} />
@@ -95,10 +95,10 @@ export function SalesTrendChart({
               <Area
                 type="monotone"
                 dataKey="sales"
-                stroke="#6366F1"
+                stroke="#CD1719"
                 strokeWidth={2}
                 fill="url(#salesGradient)"
-                activeDot={{ r: 4, fill: '#6366F1', strokeWidth: 0 }}
+                activeDot={{ r: 4, fill: '#CD1719', strokeWidth: 0 }}
               />
               <Area
                 type="monotone"

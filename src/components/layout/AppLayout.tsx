@@ -23,7 +23,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <div className="flex min-w-0 items-center gap-3 md:hidden">
             <div
               className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white"
-              style={{ background: '#6366F1' }}
+              style={{ background: 'var(--color-accent)' }}
             >
               MX
             </div>
