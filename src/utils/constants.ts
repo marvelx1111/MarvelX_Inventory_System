@@ -192,12 +192,12 @@ export const BRAND = {
 export const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
   { value: 'cash', label: 'Cash' },
   { value: 'bank_transfer', label: 'Bank Transfer' },
-  { value: 'check_po', label: 'Check/PO' },
+  { value: 'cheque', label: 'Check/PO' },
   { value: 'online', label: 'Online' },
 ];
 
 export function formatPaymentMethod(method: PaymentMethod | string): string {
-  if (method === 'cheque' || method === 'check_po') return 'Check/PO';
+  if (method === 'cheque') return 'Check/PO';
   return method
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
