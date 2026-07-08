@@ -115,6 +115,16 @@ export async function fetchAllFromSupabase(client: SupabaseClient): Promise<AppD
     purchase_cost: num(r.purchase_cost),
   }));
 
+  result.vehicleExpenses = result.vehicleExpenses.map((e) => ({
+    ...e,
+    amount: num(e.amount),
+  }));
+
+  result.showroomExpenses = result.showroomExpenses.map((e) => ({
+    ...e,
+    amount: num(e.amount),
+  }));
+
   return result;
 }
 

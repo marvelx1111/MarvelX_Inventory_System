@@ -385,6 +385,10 @@ export type CreateSaleInput = {
   remarks?: string;
 };
 
+export type CreateVehicleExpenseInput = Omit<VehicleExpense, 'expense_id'>;
+
+export type CreateShowroomExpenseInput = Omit<ShowroomExpense, 'expense_id'>;
+
 export type CreateCustomerInput = Omit<Customer, 'customer_id' | 'created_at'>;
 
 export type CreatePPFJobInput = Omit<PPFJobCard, 'job_id' | 'completion_date' | 'status'> & {

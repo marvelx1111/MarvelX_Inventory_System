@@ -1,13 +1,31 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
+import { Select } from '@/components/ui/Select';
+import { Textarea } from '@/components/ui/Textarea';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
-import { formatDate, formatPKR } from '@/utils/format';
+import { formatDate, formatPKR, parseMoneyInput } from '@/utils/format';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
+
+const VEHICLE_CATEGORY_IDS = new Set(['cat_001', 'cat_002', 'cat_003']);
+const SHOWROOM_CATEGORY_IDS = new Set(['cat_004', 'cat_005', 'cat_006']);
+
+const EMPTY_EXPENSE_FORM = {
+  vehicle_id: '',
+  category_id: '',
+  expense_date: new Date().toISOString().slice(0, 10),
+  description: '',
+  amount: '',
+};
 
 function getCurrentMonthExpenses<T extends { expense_date: string; amount: number }>(items: T[]) {
   const now = new Date();
@@ -39,6 +57,15 @@ function groupByCategory(
 
 export function ExpensesPage() {
   const loading = usePageLoading();
+  const { user } = useAuth();
+  const { success, error } = useToast();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<'vehicle' | 'showroom'>('vehicle');
+  const [addOpen, setAddOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState(EMPTY_EXPENSE_FORM);
+
+  void refreshKey;
 
   const vehicleExpenses = store.getVehicleExpenses();
   const showroomExpenses = store.getShowroomExpenses();
@@ -47,6 +74,33 @@ export function ExpensesPage() {
 
   const monthlyVehicle = getCurrentMonthExpenses(vehicleExpenses);
   const monthlyShowroom = getCurrentMonthExpenses(showroomExpenses);
+
+  const vehicleCategoryOptions = useMemo(
+    () =>
+      categories
+        .filter((c) => VEHICLE_CATEGORY_IDS.has(c.category_id))
+        .map((c) => ({ value: c.category_id, label: c.category_name })),
+    [categories],
+  );
+
+  const showroomCategoryOptions = useMemo(
+    () =>
+      categories
+        .filter((c) => SHOWROOM_CATEGORY_IDS.has(c.category_id))
+        .map((c) => ({ value: c.category_id, label: c.category_name })),
+    [categories],
+  );
+
+  const vehicleOptions = useMemo(
+    () =>
+      [...vehicles]
+        .sort((a, b) => a.stock_number.localeCompare(b.stock_number))
+        .map((v) => ({
+          value: v.vehicle_id,
+          label: `${v.stock_number} — ${v.make} ${v.model} ${v.model_year}`,
+        })),
+    [vehicles],
+  );
 
   const vehicleByCategory = useMemo(
     () => groupByCategory(vehicleExpenses, categories),
@@ -73,6 +127,79 @@ export function ExpensesPage() {
     (a, b) => new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime(),
   );
 
+  const openAddModal = (tab: 'vehicle' | 'showroom') => {
+    setActiveTab(tab);
+    setForm({
+      ...EMPTY_EXPENSE_FORM,
+      category_id:
+        tab === 'vehicle'
+          ? (vehicleCategoryOptions[0]?.value ?? '')
+          : (showroomCategoryOptions[0]?.value ?? ''),
+      vehicle_id: vehicleOptions[0]?.value ?? '',
+    });
+    setAddOpen(true);
+  };
+
+  const handleSubmitExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseMoneyInput(form.amount);
+    if (!form.category_id || !form.description.trim() || amount <= 0) {
+      error('Missing fields', 'Enter description, category, and a valid amount.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (activeTab === 'vehicle') {
+        if (!form.vehicle_id) {
+          error('Select vehicle', 'Choose which vehicle this expense applies to.');
+          return;
+        }
+        const created = await store.createVehicleExpense({
+          vehicle_id: form.vehicle_id,
+          category_id: form.category_id,
+          expense_date: form.expense_date,
+          description: form.description,
+          amount,
+        });
+        if (!created) {
+          error('Save failed', 'Could not record vehicle expense.');
+          return;
+        }
+        store.addAuditLog({
+          user_id: user?.user_id ?? 'usr_001',
+          action: 'CREATE',
+          table_name: 'vehicle_expenses',
+          record_id: created.expense_id,
+          ip_address: '127.0.0.1',
+        });
+        success('Expense added', 'Vehicle expense recorded and total cost updated.');
+      } else {
+        const created = await store.createShowroomExpense({
+          category_id: form.category_id,
+          expense_date: form.expense_date,
+          description: form.description,
+          amount,
+        });
+        store.addAuditLog({
+          user_id: user?.user_id ?? 'usr_001',
+          action: 'CREATE',
+          table_name: 'showroom_expenses',
+          record_id: created.expense_id,
+          ip_address: '127.0.0.1',
+        });
+        success('Expense added', 'Showroom expense recorded.');
+      }
+      setAddOpen(false);
+      setForm(EMPTY_EXPENSE_FORM);
+      setRefreshKey((n) => n + 1);
+    } catch (err) {
+      error('Save failed', err instanceof Error ? err.message : 'Could not save expense.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <PageTransition>
@@ -82,14 +209,21 @@ export function ExpensesPage() {
     );
   }
 
+  const categoryOptions = activeTab === 'vehicle' ? vehicleCategoryOptions : showroomCategoryOptions;
+
   return (
     <PageTransition>
       <PageHeader
         title="Expenses"
         subtitle="Track vehicle and showroom operating costs"
+        actions={
+          <Button onClick={() => openAddModal(activeTab)}>
+            Add {activeTab === 'vehicle' ? 'vehicle' : 'showroom'} expense
+          </Button>
+        }
       />
 
-      <Tabs defaultValue="vehicle">
+      <Tabs defaultValue="vehicle" value={activeTab} onValueChange={(v) => setActiveTab(v as 'vehicle' | 'showroom')}>
         <TabsList className="mb-6 w-full sm:w-auto">
           <TabsTrigger value="vehicle">Vehicle Expenses</TabsTrigger>
           <TabsTrigger value="showroom">Showroom Expenses</TabsTrigger>
@@ -126,6 +260,7 @@ export function ExpensesPage() {
 
           <ExpenseTable
             title="All Vehicle Expenses"
+            showVehicleColumn
             rows={sortedVehicleExpenses.map((exp) => {
               const vehicle = vehicles.find((v) => v.vehicle_id === exp.vehicle_id);
               const cat = categories.find((c) => c.category_id === exp.category_id);
@@ -176,6 +311,7 @@ export function ExpensesPage() {
 
           <ExpenseTable
             title="All Showroom Expenses"
+            showVehicleColumn={false}
             rows={sortedShowroomExpenses.map((exp) => {
               const cat = categories.find((c) => c.category_id === exp.category_id);
               return {
@@ -190,6 +326,76 @@ export function ExpensesPage() {
           />
         </TabsContent>
       </Tabs>
+
+      <Modal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        title={activeTab === 'vehicle' ? 'Add vehicle expense' : 'Add showroom expense'}
+        description={
+          activeTab === 'vehicle'
+            ? 'Recorded on the vehicle and added to its total cost.'
+            : 'General showroom operating expense.'
+        }
+        size="lg"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setAddOpen(false)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button type="submit" form="add-expense-form" loading={saving}>
+              Save expense
+            </Button>
+          </>
+        }
+      >
+        <form id="add-expense-form" onSubmit={handleSubmitExpense} className="grid gap-4 sm:grid-cols-2">
+          {activeTab === 'vehicle' && (
+            <div className="sm:col-span-2">
+              <Select
+                label="Vehicle"
+                required
+                value={form.vehicle_id}
+                onChange={(e) => setForm((prev) => ({ ...prev, vehicle_id: e.target.value }))}
+                options={vehicleOptions}
+                placeholder="Select vehicle"
+              />
+            </div>
+          )}
+          <Select
+            label="Category"
+            required
+            value={form.category_id}
+            onChange={(e) => setForm((prev) => ({ ...prev, category_id: e.target.value }))}
+            options={categoryOptions}
+          />
+          <Input
+            label="Date"
+            type="date"
+            required
+            value={form.expense_date}
+            onChange={(e) => setForm((prev) => ({ ...prev, expense_date: e.target.value }))}
+          />
+          <Input
+            label="Amount (PKR)"
+            type="number"
+            required
+            min={1}
+            step={1}
+            value={form.amount}
+            onChange={(e) => setForm((prev) => ({ ...prev, amount: e.target.value }))}
+          />
+          <div className="sm:col-span-2">
+            <Textarea
+              label="Description"
+              required
+              rows={2}
+              value={form.description}
+              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+              placeholder="What was this expense for?"
+            />
+          </div>
+        </form>
+      </Modal>
     </PageTransition>
   );
 }
@@ -212,7 +418,15 @@ interface ExpenseRow {
   amount: number;
 }
 
-function ExpenseTable({ title, rows }: { title: string; rows: ExpenseRow[] }) {
+function ExpenseTable({
+  title,
+  rows,
+  showVehicleColumn,
+}: {
+  title: string;
+  rows: ExpenseRow[];
+  showVehicleColumn: boolean;
+}) {
   if (rows.length === 0) {
     return (
       <Card padding="md">
@@ -234,7 +448,9 @@ function ExpenseTable({ title, rows }: { title: string; rows: ExpenseRow[] }) {
               <th className="px-5 py-3 text-left font-medium text-[var(--text-secondary)]">Date</th>
               <th className="px-5 py-3 text-left font-medium text-[var(--text-secondary)]">Description</th>
               <th className="px-5 py-3 text-left font-medium text-[var(--text-secondary)]">Category</th>
-              <th className="px-5 py-3 text-left font-medium text-[var(--text-secondary)]">Vehicle</th>
+              {showVehicleColumn && (
+                <th className="px-5 py-3 text-left font-medium text-[var(--text-secondary)]">Vehicle</th>
+              )}
               <th className="px-5 py-3 text-right font-medium text-[var(--text-secondary)]">Amount</th>
             </tr>
           </thead>
@@ -244,7 +460,7 @@ function ExpenseTable({ title, rows }: { title: string; rows: ExpenseRow[] }) {
                 <td className="px-5 py-3 text-[var(--text-secondary)]">{formatDate(row.date)}</td>
                 <td className="px-5 py-3 text-[var(--text-primary)]">{row.description}</td>
                 <td className="px-5 py-3 text-[var(--text-secondary)]">{row.category}</td>
-                <td className="px-5 py-3">{row.extra ?? '—'}</td>
+                {showVehicleColumn && <td className="px-5 py-3">{row.extra ?? '—'}</td>}
                 <td className="px-5 py-3 text-right font-medium text-[var(--text-primary)]">
                   {formatPKR(row.amount)}
                 </td>

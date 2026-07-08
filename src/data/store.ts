@@ -20,7 +20,9 @@ import type {
   CreatePPFJobInput,
   CreatePurchaseInput,
   CreateSaleInput,
+  CreateShowroomExpenseInput,
   CreateUserInput,
+  CreateVehicleExpenseInput,
   Customer,
   DeliveryRecord,
   ExpenseCategory,
@@ -202,6 +204,7 @@ class DataStore {
     this.data.vehicles.forEach((v) => track('veh', v.vehicle_id));
     this.data.vehicleDocuments.forEach((d) => track('doc', d.document_id));
     this.data.vehicleExpenses.forEach((e) => track('vex', e.expense_id));
+    this.data.showroomExpenses.forEach((e) => track('sex', e.expense_id));
     this.data.sales.forEach((s) => track('sal', s.sale_id));
     this.data.salePayments.forEach((p) => track('spay', p.payment_id));
     this.data.deliveryRecords.forEach((d) => track('del', d.delivery_id));
@@ -647,6 +650,57 @@ class DataStore {
     const persist = await persistRowInsert('customers', customer as unknown as Record<string, unknown>);
     ensurePersisted(persist);
     return customer;
+  }
+
+  async createVehicleExpense(input: CreateVehicleExpenseInput): Promise<VehicleExpense | null> {
+    const vehicle = this.data.vehicles.find((v) => v.vehicle_id === input.vehicle_id);
+    if (!vehicle) return null;
+
+    const amount = roundPKR(input.amount);
+    const expense: VehicleExpense = {
+      expense_id: this.nextId('vex'),
+      vehicle_id: input.vehicle_id,
+      category_id: input.category_id,
+      expense_date: input.expense_date,
+      description: input.description.trim(),
+      amount,
+    };
+
+    this.data.vehicleExpenses.push(expense);
+    vehicle.total_cost = roundPKR(vehicle.total_cost + amount);
+
+    ensurePersisted(
+      await persistRowInsert('vehicle_expenses', expense as unknown as Record<string, unknown>),
+    );
+    ensurePersisted(
+      await persistRowUpdate('vehicles', 'vehicle_id', vehicle.vehicle_id, {
+        total_cost: vehicle.total_cost,
+      }),
+    );
+
+    this.revision += 1;
+    this.notify();
+    return expense;
+  }
+
+  async createShowroomExpense(input: CreateShowroomExpenseInput): Promise<ShowroomExpense> {
+    const amount = roundPKR(input.amount);
+    const expense: ShowroomExpense = {
+      expense_id: this.nextId('sex'),
+      category_id: input.category_id,
+      expense_date: input.expense_date,
+      description: input.description.trim(),
+      amount,
+    };
+
+    this.data.showroomExpenses.push(expense);
+    ensurePersisted(
+      await persistRowInsert('showroom_expenses', expense as unknown as Record<string, unknown>),
+    );
+
+    this.revision += 1;
+    this.notify();
+    return expense;
   }
 
   async updateCustomer(
