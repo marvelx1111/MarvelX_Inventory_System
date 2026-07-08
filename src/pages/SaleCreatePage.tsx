@@ -60,7 +60,7 @@ export function SaleCreatePage() {
 
   const [saleDate, setSaleDate] = useState(new Date().toISOString().slice(0, 10));
   const [sellingPrice, setSellingPrice] = useState('');
-  const [token, setToken] = useState('');
+  const [paymentReceived, setPaymentReceived] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bank_transfer');
   const [saleRemarks, setSaleRemarks] = useState('');
 
@@ -72,10 +72,10 @@ export function SaleCreatePage() {
   const actualPrice = selectedVehicle?.purchase_price ?? 0;
   const totalCost = selectedVehicle?.total_cost ?? 0;
   const sellingAmount = Number(sellingPrice) || 0;
-  const tokenAmount = Number(token) || 0;
-  const balanceDue = Math.max(0, sellingAmount - tokenAmount);
+  const paymentAmount = Number(paymentReceived) || 0;
+  const balanceDue = Math.max(0, sellingAmount - paymentAmount);
   const profit = selectedVehicle ? sellingAmount - totalCost : 0;
-  const isFullPayment = sellingAmount > 0 && tokenAmount >= sellingAmount;
+  const isFullPayment = sellingAmount > 0 && paymentAmount >= sellingAmount;
 
   const canProceed = useMemo(() => {
     if (step === 0) return !!vehicleId;
@@ -119,8 +119,8 @@ export function SaleCreatePage() {
   const handleSubmit = () => {
     if (!selectedVehicle || !customerId) return;
 
-    if (tokenAmount > sellingAmount) {
-      error('Token too high', `Token cannot exceed selling price of ${formatPKR(sellingAmount)}`);
+    if (paymentAmount > sellingAmount) {
+      error('Payment too high', `Payment received cannot exceed selling price of ${formatPKR(sellingAmount)}`);
       return;
     }
 
@@ -133,7 +133,7 @@ export function SaleCreatePage() {
           sale_date: saleDate,
           sale_price: sellingAmount,
           discount: 0,
-          advance: tokenAmount,
+          advance: paymentAmount,
           payment_method: paymentMethod,
           salesperson: user?.full_name ?? 'Staff',
           remarks: saleRemarks,
@@ -440,18 +440,18 @@ export function SaleCreatePage() {
                     hint="Price you are selling the car for"
                   />
                   <Input
-                    label="Token / advance (PKR)"
+                    label="Payment received (PKR)"
                     type="number"
                     min={0}
-                    value={token}
-                    onChange={(e) => setToken(e.target.value)}
+                    value={paymentReceived}
+                    onChange={(e) => setPaymentReceived(e.target.value)}
                     placeholder="Optional"
                     hint={
-                      token === ''
-                        ? 'Leave empty if no token taken yet'
+                      paymentReceived === ''
+                        ? 'Leave empty if no payment yet — you can update this later'
                         : isFullPayment
                           ? 'Full payment received'
-                          : 'Partial payment at booking'
+                          : `Remaining after this payment: ${formatPKR(balanceDue)}`
                     }
                   />
                 </div>
@@ -464,9 +464,9 @@ export function SaleCreatePage() {
                   placeholder="Notes about this sale"
                 />
 
-                <div className="grid gap-3 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-tertiary)] p-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-3 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-tertiary)] p-4 sm:grid-cols-2">
                   <div>
-                    <p className="text-xs text-[var(--text-tertiary)]">Actual price</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Bought for</p>
                     <p className="text-lg font-bold text-[var(--text-primary)]">{formatPKR(actualPrice)}</p>
                   </div>
                   <div>
@@ -474,23 +474,25 @@ export function SaleCreatePage() {
                     <p className="text-lg font-bold text-accent">{formatPKR(sellingAmount)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-[var(--text-tertiary)]">Token received</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Payment received</p>
                     <p className="text-lg font-bold text-emerald-600">
-                      {tokenAmount > 0 ? formatPKR(tokenAmount) : '—'}
+                      {paymentAmount > 0 ? formatPKR(paymentAmount) : '—'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-[var(--text-tertiary)]">Balance due</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Remaining balance</p>
                     <p className={`text-lg font-bold ${balanceDue > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
                       {formatPKR(balanceDue)}
                     </p>
                   </div>
-                  <div className="sm:col-span-2 lg:col-span-4">
-                    <p className="text-xs text-[var(--text-tertiary)]">Estimated profit</p>
-                    <p className={`text-lg font-bold ${profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {formatPKR(profit)}
-                    </p>
-                  </div>
+                  {sellingAmount > 0 && (
+                    <div className="sm:col-span-2 border-t border-[var(--border-secondary)] pt-3">
+                      <p className="text-xs text-[var(--text-tertiary)]">Estimated profit</p>
+                      <p className={`text-lg font-bold ${profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {formatPKR(profit)}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </motion.div>

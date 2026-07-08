@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Input } from '@/components/ui/Input';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { DELIVERY_EDIT_FIELDS, SALE_EDIT_FIELDS } from '@/config/edit-fields';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,6 +27,8 @@ export function SaleDetailPage() {
   const [editSaleOpen, setEditSaleOpen] = useState(false);
   const [editDeliveryOpen, setEditDeliveryOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [paymentInput, setPaymentInput] = useState('');
+  const [recordingPayment, setRecordingPayment] = useState(false);
 
   const sale = id ? store.getSaleById(id) : undefined;
   void refreshKey;
@@ -45,13 +48,17 @@ export function SaleDetailPage() {
 
   const handleSaveSale = async (values: Record<string, string>) => {
     if (!sale) return;
+    const newPayment = Number(values.advance) || 0;
+    if (newPayment > sellingPrice) {
+      error('Payment too high', `Payment received cannot exceed selling price of ${formatPKR(sellingPrice)}`);
+      return;
+    }
     setSaving(true);
     try {
       const updated = await store.updateSale(sale.sale_id, {
         sale_date: values.sale_date,
         sale_price: Number(values.sale_price),
-        discount: Number(values.discount) || 0,
-        advance: Number(values.advance) || 0,
+        advance: newPayment,
         salesperson: values.salesperson.trim(),
         payment_method: values.payment_method as PaymentMethod,
         remarks: values.remarks.trim(),
@@ -119,6 +126,54 @@ export function SaleDetailPage() {
     }
   };
 
+  const handleRecordPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sale) return;
+
+    const totalReceived = Number(paymentInput);
+    if (!totalReceived || totalReceived < 0) {
+      error('Invalid amount', 'Enter the total payment received so far');
+      return;
+    }
+    if (totalReceived < sale.advance) {
+      error('Cannot reduce payment', 'Payment received cannot be less than what was already recorded');
+      return;
+    }
+    if (totalReceived > sellingPrice) {
+      error('Payment too high', `Cannot exceed selling price of ${formatPKR(sellingPrice)}`);
+      return;
+    }
+
+    setRecordingPayment(true);
+    try {
+      const updated = await store.updateSale(sale.sale_id, { advance: totalReceived });
+      if (!updated) {
+        error('Update failed', 'Could not record payment.');
+        return;
+      }
+      store.addAuditLog({
+        user_id: user?.user_id ?? 'usr_001',
+        action: 'UPDATE',
+        table_name: 'sales',
+        record_id: sale.sale_id,
+        ip_address: '127.0.0.1',
+      });
+      const remaining = updated.balance;
+      success(
+        remaining <= 0 ? 'Fully paid' : 'Payment recorded',
+        remaining <= 0
+          ? 'Customer has paid the full selling price.'
+          : `${formatPKR(remaining)} remaining balance.`,
+      );
+      setPaymentInput('');
+      setRefreshKey((n) => n + 1);
+    } catch {
+      error('Update failed', 'Could not record payment.');
+    } finally {
+      setRecordingPayment(false);
+    }
+  };
+
   if (loading) {
     return (
       <PageTransition>
@@ -154,7 +209,11 @@ export function SaleDetailPage() {
 
       <div className="mb-6 flex flex-wrap gap-2">
         <Badge variant={sale.balance <= 0 ? 'success' : 'warning'} dot>
-          {sale.balance <= 0 ? (isFullPayment ? 'Full payment' : 'Settled') : `${formatPKR(sale.balance)} due`}
+          {sale.balance <= 0
+            ? isFullPayment
+              ? 'Fully paid'
+              : 'Settled'
+            : `${formatPKR(sale.balance)} remaining`}
         </Badge>
         <Badge variant="accent">Selling price: {formatPKR(sellingPrice)}</Badge>
         <Badge variant="info">Profit: {formatPKR(sale.profit)}</Badge>
@@ -174,14 +233,15 @@ export function SaleDetailPage() {
                 <InfoItem label="Actual price (bought for)" value={formatPKR(actualPrice)} />
               )}
               <InfoItem label="Selling price" value={formatPKR(sellingPrice)} highlight="accent" />
-              {sale.discount > 0 && (
-                <InfoItem label="Discount" value={formatPKR(sale.discount)} />
-              )}
               <InfoItem
-                label="Token / advance"
-                value={sale.advance > 0 ? formatPKR(sale.advance) : 'None'}
+                label="Payment received"
+                value={sale.advance > 0 ? formatPKR(sale.advance) : 'None yet'}
               />
-              <InfoItem label="Balance due" value={formatPKR(sale.balance)} />
+              <InfoItem
+                label="Remaining balance"
+                value={formatPKR(sale.balance)}
+                highlight={sale.balance > 0 ? 'warning' : undefined}
+              />
               <InfoItem label="Payment method" value={sale.payment_method.replace('_', ' ')} />
               {vehicle && vehicle.total_cost > actualPrice && (
                 <InfoItem label="Total cost (incl. expenses)" value={formatPKR(vehicle.total_cost)} />
@@ -247,21 +307,50 @@ export function SaleDetailPage() {
               <SummaryRow label="Actual price (bought for)" value={formatPKR(actualPrice)} />
             )}
             <SummaryRow label="Selling price" value={formatPKR(sellingPrice)} highlight="accent" />
-            {sale.discount > 0 && (
-              <SummaryRow label="Discount" value={`− ${formatPKR(sale.discount)}`} />
-            )}
             <SummaryRow
-              label="Token / advance"
-              value={sale.advance > 0 ? formatPKR(sale.advance) : 'None'}
+              label="Payment received"
+              value={sale.advance > 0 ? formatPKR(sale.advance) : 'None yet'}
               highlight={sale.advance > 0 ? 'success' : undefined}
             />
             <SummaryRow
-              label="Balance due"
+              label="Remaining balance"
               value={formatPKR(sale.balance)}
               highlight={sale.balance > 0 ? 'warning' : 'success'}
             />
           </CardContent>
         </Card>
+
+        {sale.balance > 0 && (
+          <Card padding="md" className="no-print lg:col-span-3">
+            <CardHeader>
+              <CardTitle>Record payment</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4 text-sm text-[var(--text-secondary)]">
+                Customer still owes <strong className="text-amber-600">{formatPKR(sale.balance)}</strong>.
+                Enter the <strong>total payment received so far</strong> (including any token paid earlier).
+              </p>
+              <form onSubmit={handleRecordPayment} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="flex-1">
+                  <Input
+                    label="Total payment received (PKR)"
+                    type="number"
+                    required
+                    min={sale.advance}
+                    max={sellingPrice}
+                    value={paymentInput}
+                    onChange={(e) => setPaymentInput(e.target.value)}
+                    placeholder={String(sale.advance || '')}
+                    hint={`Currently recorded: ${formatPKR(sale.advance)} · Selling price: ${formatPKR(sellingPrice)}`}
+                  />
+                </div>
+                <Button type="submit" loading={recordingPayment} className="sm:mb-0.5">
+                  Update payment
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
 
         <EditableCard
           title="Delivery Record"
@@ -297,7 +386,6 @@ export function SaleDetailPage() {
         values={{
           sale_date: sale.sale_date,
           sale_price: String(sale.sale_price),
-          discount: String(sale.discount),
           advance: String(sale.advance),
           salesperson: sale.salesperson,
           payment_method: sale.payment_method,
@@ -333,14 +421,18 @@ function InfoItem({
 }: {
   label: string;
   value: string;
-  highlight?: 'accent';
+  highlight?: 'accent' | 'warning';
 }) {
   return (
     <div>
       <dt className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">{label}</dt>
       <dd
         className={`mt-0.5 text-sm font-medium ${
-          highlight === 'accent' ? 'text-accent' : 'text-[var(--text-primary)]'
+          highlight === 'accent'
+            ? 'text-accent'
+            : highlight === 'warning'
+              ? 'text-amber-600'
+              : 'text-[var(--text-primary)]'
         }`}
       >
         {value}

@@ -554,10 +554,10 @@ class DataStore {
     if (!vehicle || !customer) return null;
     if (vehicle.status === 'sold') return null;
 
-    const netCarPrice = input.sale_price - input.discount;
-    const tokenReceived = Math.min(Math.max(0, input.advance), netCarPrice);
-    const balanceDue = Math.max(0, netCarPrice - tokenReceived);
-    const profit = netCarPrice - vehicle.total_cost;
+    const sellingPrice = input.sale_price - input.discount;
+    const paymentReceived = Math.min(Math.max(0, input.advance), sellingPrice);
+    const balanceDue = Math.max(0, sellingPrice - paymentReceived);
+    const profit = sellingPrice - vehicle.total_cost;
 
     const sale: Sale = {
       sale_id: this.nextId('sal'),
@@ -566,7 +566,7 @@ class DataStore {
       sale_date: input.sale_date,
       sale_price: input.sale_price,
       discount: input.discount,
-      advance: tokenReceived,
+      advance: paymentReceived,
       balance: balanceDue,
       payment_method: input.payment_method,
       salesperson: input.salesperson,
@@ -671,10 +671,11 @@ class DataStore {
       }
     }
     if (updates.sale_price !== undefined || updates.discount !== undefined || updates.advance !== undefined) {
-      const netCarPrice = sale.sale_price - sale.discount;
-      const tokenReceived = Math.min(Math.max(0, sale.advance), netCarPrice);
-      sale.advance = tokenReceived;
-      sale.balance = Math.max(0, netCarPrice - tokenReceived);
+      const sellingPrice = sale.sale_price - sale.discount;
+      const paymentReceived = Math.min(Math.max(0, sale.advance), sellingPrice);
+      sale.advance = paymentReceived;
+      sale.balance = Math.max(0, sellingPrice - paymentReceived);
+      sale.profit = sellingPrice - (this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id)?.total_cost ?? 0);
       const vehicle = this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id);
       if (vehicle) {
         vehicle.status = sale.balance <= 0 ? 'sold' : 'booked';
@@ -693,6 +694,8 @@ class DataStore {
       profit: sale.profit,
       remarks: sale.remarks,
     }));
+    this.revision += 1;
+    this.notify();
     return sale;
   }
 

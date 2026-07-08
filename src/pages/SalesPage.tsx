@@ -110,13 +110,13 @@ export function SalesPage() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-[var(--text-tertiary)]">Token</p>
+                          <p className="text-xs text-[var(--text-tertiary)]">Payment received</p>
                           <p className="font-semibold text-emerald-600">
                             {sale.advance > 0 ? formatPKR(sale.advance) : '—'}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-[var(--text-tertiary)]">Balance due</p>
+                          <p className="text-xs text-[var(--text-tertiary)]">Remaining</p>
                           <p className={`font-semibold ${sale.balance > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
                             {formatPKR(sale.balance)}
                           </p>
