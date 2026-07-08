@@ -118,11 +118,11 @@ function main(): void {
   console.log('✓ Stale balance row reconciles customer owed to zero');
 
   const legacy = computeSaleFinancials(
-    { sale_price: 4_000_000, discount: 0, advance: 0, balance: 0 },
+    { sale_price: 4_000_000, discount: 0, advance: 2_000_000, balance: 2_000_000 },
     3_985_000,
   );
-  assert(legacy.customerOwed === 0 && legacy.paymentReceived === 4_000_000, 'Legacy full-pay row');
-  console.log('✓ Legacy balance-only payment reconciles to full payment received');
+  assert(legacy.paymentReceived === 2_000_000 && legacy.customerOwed === 2_000_000, 'Legacy balance partial row');
+  console.log('✓ Legacy balance-only partial payment preserved');
 
   console.log('\nAll sale mechanism checks passed.');
 }

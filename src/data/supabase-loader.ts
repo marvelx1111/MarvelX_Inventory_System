@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AppData, User } from '@/types';
+import { roundPKR } from '@/utils/format';
 import { computeSaleFinancials } from '@/utils/sale';
 
 const TABLES: { key: keyof AppData; table: string }[] = [
@@ -35,8 +36,8 @@ const TABLES: { key: keyof AppData; table: string }[] = [
 ];
 
 function num(value: unknown): number {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') return Number.parseFloat(value) || 0;
+  if (typeof value === 'number') return roundPKR(value);
+  if (typeof value === 'string') return roundPKR(Number.parseFloat(value) || 0);
   return 0;
 }
 

@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
 import type { PaymentMethod } from '@/types';
-import { formatCNIC, formatDate, formatPKR } from '@/utils/format';
+import { formatCNIC, formatDate, formatPKR, parseMoneyInput } from '@/utils/format';
 import { computeSaleFinancials } from '@/utils/sale';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
@@ -62,7 +62,7 @@ export function SaleDetailPage() {
 
   const handleSaveSale = async (values: Record<string, string>) => {
     if (!sale) return;
-    const newPayment = Number(values.advance) || 0;
+    const newPayment = parseMoneyInput(values.advance);
     if (newPayment > sellingPrice) {
       error('Payment too high', `Payment received cannot exceed selling price of ${formatPKR(sellingPrice)}`);
       return;
@@ -71,7 +71,7 @@ export function SaleDetailPage() {
     try {
       const updated = await store.updateSale(sale.sale_id, {
         sale_date: values.sale_date,
-        sale_price: Number(values.sale_price),
+        sale_price: parseMoneyInput(values.sale_price),
         advance: newPayment,
         salesperson: values.salesperson.trim(),
         payment_method: values.payment_method as PaymentMethod,
@@ -144,7 +144,7 @@ export function SaleDetailPage() {
     e.preventDefault();
     if (!sale) return;
 
-    const totalReceived = Number(paymentInput);
+    const totalReceived = parseMoneyInput(paymentInput);
     if (!totalReceived || totalReceived < 0) {
       error('Invalid amount', 'Enter the total payment received so far');
       return;

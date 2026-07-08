@@ -7,7 +7,8 @@ import {
   persistRowUpdate,
   type PersistResult,
 } from '@/data/supabase-sync';
-import { computeSaleFinancials } from '@/utils/sale';
+import { computeSaleFinancials, normalizeSaleInput } from '@/utils/sale';
+import { roundPKR } from '@/utils/format';
 
 function ensurePersisted(result: PersistResult): void {
   if (!result.ok) throw new Error(result.error);
@@ -561,17 +562,18 @@ class DataStore {
     return { purchase, vehicle, document };
   }
 
-  createSale(input: CreateSaleInput): Sale | null {
+  async createSale(input: CreateSaleInput): Promise<Sale | null> {
     const vehicle = this.data.vehicles.find((v) => v.vehicle_id === input.vehicle_id);
     const customer = this.data.customers.find((c) => c.customer_id === input.customer_id);
 
     if (!vehicle || !customer) return null;
     if (vehicle.status === 'sold') return null;
 
+    const amounts = normalizeSaleInput(input);
     const draft = {
-      sale_price: input.sale_price,
-      discount: input.discount,
-      advance: input.advance,
+      sale_price: amounts.sale_price,
+      discount: amounts.discount,
+      advance: amounts.advance,
       balance: 0,
     };
     const { paymentReceived, customerOwed, profit, isFullyPaid } = computeSaleFinancials(
@@ -584,8 +586,8 @@ class DataStore {
       vehicle_id: input.vehicle_id,
       customer_id: input.customer_id,
       sale_date: input.sale_date,
-      sale_price: input.sale_price,
-      discount: input.discount,
+      sale_price: amounts.sale_price,
+      discount: amounts.discount,
       advance: paymentReceived,
       balance: customerOwed,
       payment_method: input.payment_method,
@@ -595,7 +597,12 @@ class DataStore {
     };
 
     vehicle.status = isFullyPaid ? 'sold' : 'booked';
+
     this.data.sales.push(sale);
+    ensurePersisted(await persistRowInsert('sales', sale as unknown as Record<string, unknown>));
+    ensurePersisted(
+      await persistRowUpdate('vehicles', 'vehicle_id', vehicle.vehicle_id, { status: vehicle.status }),
+    );
     this.revision += 1;
     this.notify();
 
@@ -681,11 +688,11 @@ class DataStore {
     if (index === -1) return null;
 
     const normalized = { ...updates };
-    if (normalized.sale_price !== undefined) normalized.sale_price = Number(normalized.sale_price);
-    if (normalized.discount !== undefined) normalized.discount = Number(normalized.discount);
-    if (normalized.advance !== undefined) normalized.advance = Number(normalized.advance);
-    if (normalized.balance !== undefined) normalized.balance = Number(normalized.balance);
-    if (normalized.profit !== undefined) normalized.profit = Number(normalized.profit);
+    if (normalized.sale_price !== undefined) normalized.sale_price = roundPKR(Number(normalized.sale_price));
+    if (normalized.discount !== undefined) normalized.discount = roundPKR(Number(normalized.discount));
+    if (normalized.advance !== undefined) normalized.advance = roundPKR(Number(normalized.advance));
+    if (normalized.balance !== undefined) normalized.balance = roundPKR(Number(normalized.balance));
+    if (normalized.profit !== undefined) normalized.profit = roundPKR(Number(normalized.profit));
 
     const sale = { ...this.data.sales[index], ...normalized };
     const vehicle = this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id);

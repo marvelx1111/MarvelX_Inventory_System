@@ -2,13 +2,26 @@ export function cn(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(' ');
 }
 
+/** Whole-rupee PKR amounts — prevents float drift in sale math. */
+export function roundPKR(amount: number): number {
+  if (!Number.isFinite(amount)) return 0;
+  return Math.round(amount);
+}
+
+/** Parse user-entered money as whole PKR (supports commas). */
+export function parseMoneyInput(value: string): number {
+  const cleaned = value.replace(/[^\d.-]/g, '').trim();
+  if (!cleaned) return 0;
+  return roundPKR(Number.parseFloat(cleaned));
+}
+
 export function formatPKR(amount: number): string {
   return new Intl.NumberFormat('en-PK', {
     style: 'currency',
     currency: 'PKR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(roundPKR(amount));
 }
 
 export function formatDate(

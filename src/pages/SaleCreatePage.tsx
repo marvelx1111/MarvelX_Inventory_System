@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
 import type { CustomerType, PaymentMethod } from '@/types';
-import { formatPKR } from '@/utils/format';
+import { formatPKR, parseMoneyInput } from '@/utils/format';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
 
@@ -72,8 +72,8 @@ export function SaleCreatePage() {
 
   const totalCost = selectedVehicle?.total_cost ?? 0;
   const purchasePrice = selectedVehicle?.purchase_price ?? 0;
-  const sellingAmount = Number(sellingPrice) || 0;
-  const paymentAmount = Math.min(Number(paymentReceived) || 0, sellingAmount);
+  const sellingAmount = parseMoneyInput(sellingPrice);
+  const paymentAmount = Math.min(parseMoneyInput(paymentReceived), sellingAmount);
   const customerOwed = Math.max(0, sellingAmount - paymentAmount);
   const isLossSale = sellingAmount > 0 && sellingAmount < totalCost;
   const remainingBalance = isLossSale
@@ -90,7 +90,7 @@ export function SaleCreatePage() {
         ? !!newCustomer.full_name.trim() && !!newCustomer.mobile.trim()
         : !!customerId;
     }
-    return !!sellingPrice && Number(sellingPrice) > 0;
+    return !!sellingPrice && parseMoneyInput(sellingPrice) > 0;
   }, [step, vehicleId, customerId, showNewCustomer, newCustomer, sellingPrice]);
 
   const handleNext = async () => {
@@ -133,7 +133,7 @@ export function SaleCreatePage() {
     setSubmitting(true);
     void (async () => {
       try {
-        const sale = store.createSale({
+        const sale = await store.createSale({
           vehicle_id: vehicleId,
           customer_id: customerId,
           sale_date: saleDate,
@@ -428,6 +428,7 @@ export function SaleCreatePage() {
                     type="number"
                     required
                     min={0}
+                    step={1}
                     value={sellingPrice}
                     onChange={(e) => setSellingPrice(e.target.value)}
                     hint="Price you are selling the car for"
@@ -436,6 +437,7 @@ export function SaleCreatePage() {
                     label="Payment received (PKR)"
                     type="number"
                     min={0}
+                    step={1}
                     value={paymentReceived}
                     onChange={(e) => setPaymentReceived(e.target.value)}
                     placeholder="Optional"
