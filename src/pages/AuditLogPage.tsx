@@ -50,7 +50,7 @@ function AccessDenied() {
     <Card padding="none">
       <EmptyState
         title="Access restricted"
-        description="You need audit log permissions to view system activity."
+        description="You need activity log permissions to view user activity."
       />
     </Card>
   );
@@ -215,13 +215,13 @@ export function AuditLogPage() {
     setActionFilter('');
     setTableFilter('');
     setUserFilter('');
-    info('Filters cleared', 'Showing all audit log entries.');
+    info('Filters cleared', 'Showing all user activity entries.');
   };
 
   if (!canViewAudit) {
     return (
       <div>
-        <PageHeader title="Audit Log" subtitle="System activity trail" />
+        <PageHeader title="User Activity" subtitle="User activity trail" />
         <AccessDenied />
       </div>
     );
@@ -230,7 +230,7 @@ export function AuditLogPage() {
   if (loading) {
     return (
       <div>
-        <PageHeader title="Audit Log" subtitle="System activity trail" />
+        <PageHeader title="User Activity" subtitle="User activity trail" />
         <AuditSkeleton />
       </div>
     );
@@ -239,7 +239,7 @@ export function AuditLogPage() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <PageHeader
-        title="Audit Log"
+        title="User Activity"
         subtitle={`${filteredLogs.length} of ${logs.length} entries`}
         actions={
           hasFilters ? (
@@ -279,11 +279,11 @@ export function AuditLogPage() {
       {filteredLogs.length === 0 ? (
         <Card padding="none">
           <EmptyState
-            title={hasFilters ? 'No matching entries' : 'No audit logs yet'}
+            title={hasFilters ? 'No matching entries' : 'No user activity yet'}
             description={
               hasFilters
                 ? 'Try adjusting your filters to see more results.'
-                : 'System activity will be recorded here.'
+                : 'User activity will be recorded here.'
             }
             action={hasFilters ? { label: 'Clear filters', onClick: clearFilters } : undefined}
           />

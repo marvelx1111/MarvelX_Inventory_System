@@ -18,7 +18,7 @@ export function createSeedData(): AppData {
       { permission_id: 'perm_007', permission_name: 'Manage Investors', module: 'investors' },
       { permission_id: 'perm_008', permission_name: 'Manage PPF', module: 'ppf' },
       { permission_id: 'perm_009', permission_name: 'Manage Users', module: 'users' },
-      { permission_id: 'perm_010', permission_name: 'View Audit Logs', module: 'audit' },
+      { permission_id: 'perm_010', permission_name: 'View User Activity', module: 'audit' },
     ],
 
     rolePermissions: [
@@ -435,6 +435,7 @@ export function createSeedData(): AppData {
       {
         document_id: 'doc_001',
         vehicle_id: 'veh_001',
+        biometric_status: 'done',
         smart_card_status: 'received',
         smart_card_count: 1,
         biometric_required: false,
@@ -452,6 +453,7 @@ export function createSeedData(): AppData {
       {
         document_id: 'doc_002',
         vehicle_id: 'veh_002',
+        biometric_status: 'done',
         smart_card_status: 'received',
         smart_card_count: 1,
         biometric_required: false,
@@ -469,6 +471,7 @@ export function createSeedData(): AppData {
       {
         document_id: 'doc_003',
         vehicle_id: 'veh_003',
+        biometric_status: 'open_bio',
         smart_card_status: 'pending',
         smart_card_count: 1,
         biometric_required: true,
@@ -486,6 +489,7 @@ export function createSeedData(): AppData {
       {
         document_id: 'doc_004',
         vehicle_id: 'veh_004',
+        biometric_status: 'done',
         smart_card_status: 'received',
         smart_card_count: 1,
         biometric_required: false,
@@ -503,6 +507,7 @@ export function createSeedData(): AppData {
       {
         document_id: 'doc_005',
         vehicle_id: 'veh_005',
+        biometric_status: 'done',
         smart_card_status: 'received',
         smart_card_count: 1,
         biometric_required: false,
@@ -520,6 +525,7 @@ export function createSeedData(): AppData {
       {
         document_id: 'doc_006',
         vehicle_id: 'veh_006',
+        biometric_status: 'done',
         smart_card_status: 'received',
         smart_card_count: 1,
         biometric_required: false,
@@ -537,6 +543,7 @@ export function createSeedData(): AppData {
       {
         document_id: 'doc_007',
         vehicle_id: 'veh_007',
+        biometric_status: 'not_taken',
         smart_card_status: 'not_applicable',
         smart_card_count: 0,
         biometric_required: false,
@@ -554,6 +561,7 @@ export function createSeedData(): AppData {
       {
         document_id: 'doc_008',
         vehicle_id: 'veh_008',
+        biometric_status: 'done',
         smart_card_status: 'transferred',
         smart_card_count: 1,
         biometric_required: true,
@@ -571,6 +579,7 @@ export function createSeedData(): AppData {
       {
         document_id: 'doc_009',
         vehicle_id: 'veh_009',
+        biometric_status: 'done',
         smart_card_status: 'received',
         smart_card_count: 1,
         biometric_required: false,

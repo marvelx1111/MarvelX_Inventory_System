@@ -4,6 +4,7 @@ export type VehicleStatus = 'in_stock' | 'booked' | 'sold';
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'cheque' | 'online';
 export type PPFJobStatus = 'booked' | 'in_progress' | 'completed' | 'delivered';
 export type PPFStockTxnType = 'purchase' | 'usage' | 'adjustment';
+export type BiometricStatus = 'done' | 'not_taken' | 'open_bio' | 'isb_no_bio';
 
 export interface Role {
   role_id: string;
@@ -86,6 +87,7 @@ export interface VehicleDocument {
   smart_card_count: number;
   biometric_required: boolean;
   biometric_completed: boolean;
+  biometric_status: BiometricStatus;
   original_file: boolean;
   registration_book: boolean;
   tax_token: boolean;
@@ -342,8 +344,32 @@ export interface AppData {
   auditLogs: AuditLog[];
 }
 
+export type PurchaseDocumentInput = {
+  biometric_status: BiometricStatus;
+  original_file: boolean;
+  registration_book: boolean;
+  tax_token: boolean;
+  spare_key: boolean;
+  spare_wheel: boolean;
+  tool_kit: boolean;
+  user_manual: boolean;
+  insurance: boolean;
+  smart_card_status?: string;
+  remarks?: string;
+};
+
 export type CreatePurchaseInput = Omit<Purchase, 'purchase_id'> & {
   vehicle: Omit<Vehicle, 'vehicle_id' | 'purchase_id' | 'stock_number' | 'total_cost' | 'status'>;
+  document?: PurchaseDocumentInput;
+};
+
+export type CreateUserInput = {
+  full_name: string;
+  username: string;
+  email: string;
+  phone: string;
+  role_id: string;
+  status: UserStatus;
 };
 
 export type CreateSaleInput = {

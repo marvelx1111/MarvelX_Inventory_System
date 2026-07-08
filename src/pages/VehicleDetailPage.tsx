@@ -8,13 +8,14 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Select } from '@/components/ui/Select';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { VEHICLE_EDIT_FIELDS } from '@/config/edit-fields';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
-import type { VehicleDocument, VehicleStatus } from '@/types';
-import { VEHICLE_STATUS_CONFIG } from '@/utils/constants';
+import type { BiometricStatus, VehicleDocument, VehicleStatus } from '@/types';
+import { BIOMETRIC_OPTIONS, BIOMETRIC_STATUS_CONFIG, VEHICLE_STATUS_CONFIG } from '@/utils/constants';
 import { formatCNIC, formatDate, formatPKR, cn } from '@/utils/format';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
@@ -92,6 +93,17 @@ export function VehicleDetailPage() {
     const current = details.document[key];
     await store.updateVehicleDocument(details.document.document_id, { [key]: !current });
     success('Document updated', `${DOCUMENT_CHECKLIST.find((d) => d.key === key)?.label} marked ${!current ? 'received' : 'pending'}`);
+    setRefreshKey((n) => n + 1);
+  };
+
+  const handleBiometricChange = async (value: BiometricStatus) => {
+    if (!details?.document) return;
+    await store.updateVehicleDocument(details.document.document_id, {
+      biometric_status: value,
+      biometric_required: value !== 'not_taken',
+      biometric_completed: value === 'done',
+    });
+    success('Biometric updated', BIOMETRIC_STATUS_CONFIG[value].label);
     setRefreshKey((n) => n + 1);
   };
 
@@ -297,6 +309,39 @@ export function VehicleDetailPage() {
               </div>
             ) : (
               <p className="text-sm text-[var(--text-tertiary)]">No document record</p>
+            )}
+
+            {document && (
+              <div className="mt-4 flex flex-col gap-3 border-t border-[var(--border-secondary)] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
+                    Biometric
+                  </p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span
+                      className={cn(
+                        'h-2 w-2 rounded-full',
+                        BIOMETRIC_STATUS_CONFIG[document.biometric_status].dotColor,
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        'text-sm font-medium',
+                        BIOMETRIC_STATUS_CONFIG[document.biometric_status].color,
+                      )}
+                    >
+                      {BIOMETRIC_STATUS_CONFIG[document.biometric_status].label}
+                    </span>
+                  </div>
+                </div>
+                <div className="no-print w-full sm:w-64">
+                  <Select
+                    value={document.biometric_status}
+                    onChange={(e) => handleBiometricChange(e.target.value as BiometricStatus)}
+                    options={BIOMETRIC_OPTIONS}
+                  />
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

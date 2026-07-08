@@ -1,4 +1,4 @@
-import type { PPFJobStatus, PermissionModule, VehicleStatus } from '@/types';
+import type { BiometricStatus, PPFJobStatus, PermissionModule, VehicleStatus } from '@/types';
 
 export interface NavItem {
   label: string;
@@ -73,11 +73,11 @@ export const NAV_ITEMS: NavItem[] = [
     description: 'Team and roles',
   },
   {
-    label: 'Audit Log',
+    label: 'User Activity',
     href: '/audit',
     module: 'audit',
     icon: 'audit',
-    description: 'System activity trail',
+    description: 'User activity trail',
   },
 ];
 
@@ -134,6 +134,54 @@ export const PPF_STATUS_CONFIG: Record<
     dotColor: 'bg-red-600',
   },
 };
+
+export const BIOMETRIC_OPTIONS: { value: BiometricStatus; label: string }[] = [
+  { value: 'not_taken', label: 'Not Taken' },
+  { value: 'done', label: 'Done' },
+  { value: 'open_bio', label: 'Open Bio' },
+  { value: 'isb_no_bio', label: 'ISB — No Bio Before Inspection' },
+];
+
+export const BIOMETRIC_STATUS_CONFIG: Record<
+  BiometricStatus,
+  { label: string; color: string; bgColor: string; dotColor: string }
+> = {
+  done: {
+    label: 'Biometric Done',
+    color: 'text-emerald-700 dark:text-emerald-400',
+    bgColor: 'bg-emerald-50 dark:bg-emerald-950/40',
+    dotColor: 'bg-emerald-500',
+  },
+  not_taken: {
+    label: 'Not Taken',
+    color: 'text-zinc-600 dark:text-zinc-400',
+    bgColor: 'bg-zinc-100 dark:bg-zinc-800/60',
+    dotColor: 'bg-zinc-400',
+  },
+  open_bio: {
+    label: 'Open Bio',
+    color: 'text-amber-700 dark:text-amber-400',
+    bgColor: 'bg-amber-50 dark:bg-amber-950/40',
+    dotColor: 'bg-amber-500',
+  },
+  isb_no_bio: {
+    label: 'ISB — No Bio Before Inspection',
+    color: 'text-blue-700 dark:text-blue-400',
+    bgColor: 'bg-blue-50 dark:bg-blue-950/40',
+    dotColor: 'bg-blue-500',
+  },
+};
+
+export const DOCUMENT_CHECKLIST_ITEMS: { key: string; label: string }[] = [
+  { key: 'original_file', label: 'Original File' },
+  { key: 'registration_book', label: 'Registration Book' },
+  { key: 'tax_token', label: 'Tax Token' },
+  { key: 'spare_key', label: 'Spare Key' },
+  { key: 'spare_wheel', label: 'Spare Wheel' },
+  { key: 'tool_kit', label: 'Tool Kit' },
+  { key: 'user_manual', label: 'User Manual' },
+  { key: 'insurance', label: 'Insurance' },
+];
 
 export const BRAND = {
   name: 'Marvel X',

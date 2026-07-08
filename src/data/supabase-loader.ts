@@ -89,6 +89,11 @@ export async function fetchAllFromSupabase(client: SupabaseClient): Promise<AppD
     profit: num(s.profit),
   }));
 
+  result.vehicleDocuments = result.vehicleDocuments.map((d) => ({
+    ...d,
+    biometric_status: (d.biometric_status ?? 'not_taken') as (typeof d)['biometric_status'],
+  }));
+
   result.ppfRolls = result.ppfRolls.map((r) => ({
     ...r,
     width: num(r.width),

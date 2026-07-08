@@ -2,11 +2,15 @@ import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { EditRecordModal, type EditFieldConfig } from '@/components/ui/EditRecordModal';
+import { Modal } from '@/components/ui/Modal';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { usePermission } from '@/contexts/AuthContext';
+import { ADMIN_ROLE_ID, useAuth, usePermission } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
 import type { Permission, Role, User } from '@/types';
 import { cn, getInitials } from '@/utils/format';
@@ -21,6 +25,15 @@ interface RoleRow extends Role {
   permissions: Permission[];
   userCount: number;
 }
+
+const NEW_USER_DEFAULTS: Record<string, string> = {
+  full_name: '',
+  username: '',
+  email: '',
+  phone: '',
+  role_id: '',
+  status: 'active',
+};
 
 function UsersSkeleton() {
   return (
@@ -66,7 +79,17 @@ function AccessDenied() {
   );
 }
 
-function UsersTable({ users }: { users: UserRow[] }) {
+function UsersTable({
+  users,
+  isAdmin,
+  currentUserId,
+  onDelete,
+}: {
+  users: UserRow[];
+  isAdmin: boolean;
+  currentUserId?: string;
+  onDelete: (user: UserRow) => void;
+}) {
   return (
     <>
       {/* Desktop table */}
@@ -78,6 +101,11 @@ function UsersTable({ users }: { users: UserRow[] }) {
               <th className="px-4 py-3 font-medium text-[var(--text-secondary)]">Role</th>
               <th className="px-4 py-3 font-medium text-[var(--text-secondary)]">Status</th>
               <th className="px-4 py-3 font-medium text-[var(--text-secondary)]">Permissions</th>
+              {isAdmin && (
+                <th className="px-4 py-3 text-right font-medium text-[var(--text-secondary)]">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -121,6 +149,19 @@ function UsersTable({ users }: { users: UserRow[] }) {
                     ))}
                   </div>
                 </td>
+                {isAdmin && (
+                  <td className="px-4 py-3 text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDelete(user)}
+                      disabled={user.user_id === currentUserId}
+                      className="text-danger hover:text-danger"
+                    >
+                      Delete
+                    </Button>
+                  </td>
+                )}
               </motion.tr>
             ))}
           </tbody>
@@ -164,6 +205,19 @@ function UsersTable({ users }: { users: UserRow[] }) {
                       </Badge>
                     ))}
                   </div>
+                  {isAdmin && (
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDelete(user)}
+                        disabled={user.user_id === currentUserId}
+                        className="text-danger hover:text-danger"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>
@@ -174,7 +228,15 @@ function UsersTable({ users }: { users: UserRow[] }) {
   );
 }
 
-function RolesPanel({ roles }: { roles: RoleRow[] }) {
+function RolesPanel({
+  roles,
+  isAdmin,
+  onEditPermissions,
+}: {
+  roles: RoleRow[];
+  isAdmin: boolean;
+  onEditPermissions: (role: RoleRow) => void;
+}) {
   return (
     <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
       {roles.map((role, index) => (
@@ -199,12 +261,23 @@ function RolesPanel({ roles }: { roles: RoleRow[] }) {
                 Permissions ({role.permissions.length})
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {role.permissions.map((perm) => (
-                  <Badge key={perm.permission_id} variant="info">
-                    {perm.permission_name}
-                  </Badge>
-                ))}
+                {role.permissions.length === 0 ? (
+                  <span className="text-xs text-[var(--text-tertiary)]">No access granted</span>
+                ) : (
+                  role.permissions.map((perm) => (
+                    <Badge key={perm.permission_id} variant="info">
+                      {perm.permission_name}
+                    </Badge>
+                  ))
+                )}
               </div>
+              {isAdmin && (
+                <div className="mt-4">
+                  <Button variant="secondary" size="sm" onClick={() => onEditPermissions(role)}>
+                    Edit access
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -256,11 +329,109 @@ function PermissionsPanel({ permissions }: { permissions: Permission[] }) {
   );
 }
 
+function RolePermissionsModal({
+  role,
+  permissions,
+  currentPermissionIds,
+  saving,
+  onClose,
+  onSave,
+}: {
+  role: RoleRow | null;
+  permissions: Permission[];
+  currentPermissionIds: string[];
+  saving: boolean;
+  onClose: () => void;
+  onSave: (permissionIds: string[]) => void;
+}) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setSelected(new Set(currentPermissionIds));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role?.role_id]);
+
+  const byModule = useMemo(() => {
+    const groups: Record<string, Permission[]> = {};
+    for (const perm of permissions) {
+      if (!groups[perm.module]) groups[perm.module] = [];
+      groups[perm.module].push(perm);
+    }
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [permissions]);
+
+  const toggle = (permissionId: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(permissionId)) next.delete(permissionId);
+      else next.add(permissionId);
+      return next;
+    });
+  };
+
+  return (
+    <Modal
+      open={role !== null}
+      onClose={onClose}
+      title={role ? `Edit access — ${role.role_name}` : 'Edit access'}
+      description="Toggle the modules this role can access. Changes sync to Supabase immediately."
+      size="lg"
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button onClick={() => onSave([...selected])} loading={saving}>
+            Save access
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        {byModule.map(([module, perms]) => (
+          <div key={module} className="rounded-lg border border-[var(--border-primary)] p-3">
+            <p className="mb-2 text-sm font-semibold capitalize text-[var(--text-primary)]">
+              {module}
+            </p>
+            <ul className="space-y-1.5">
+              {perms.map((perm) => (
+                <li key={perm.permission_id}>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--text-secondary)]">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(perm.permission_id)}
+                      onChange={() => toggle(perm.permission_id)}
+                      className="h-4 w-4 rounded border-[var(--border-primary)] text-accent focus:ring-accent"
+                    />
+                    {perm.permission_name}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
 export function UsersPage() {
   const canManageUsers = usePermission('users');
+  const { isAdmin, user: currentUser } = useAuth();
+  const { success, error, info } = useToast();
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [addOpen, setAddOpen] = useState(false);
+  const [savingUser, setSavingUser] = useState(false);
+  const [roleToEdit, setRoleToEdit] = useState<RoleRow | null>(null);
+  const [savingRole, setSavingRole] = useState(false);
+
+  useEffect(() => {
+    return store.subscribe(() => setRefreshKey((n) => n + 1));
+  }, []);
 
   const { users, roles, permissions } = useMemo(() => {
+    void refreshKey;
     const allRoles = store.getRoles();
     const allPermissions = store.getPermissions();
     const rolePermissions = store.getRolePermissions();
@@ -290,12 +461,122 @@ export function UsersPage() {
     }));
 
     return { users: userRows, roles: roleRows, permissions: allPermissions };
-  }, []);
+  }, [refreshKey]);
+
+  const userFields = useMemo<EditFieldConfig[]>(
+    () => [
+      { key: 'full_name', label: 'Full name', required: true },
+      { key: 'username', label: 'Username', required: true },
+      { key: 'email', label: 'Email', type: 'email', required: true },
+      { key: 'phone', label: 'Phone', type: 'tel' },
+      {
+        key: 'role_id',
+        label: 'Role',
+        type: 'select',
+        required: true,
+        options: roles.map((r) => ({ value: r.role_id, label: r.role_name })),
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        options: [
+          { value: 'active', label: 'Active' },
+          { value: 'inactive', label: 'Inactive' },
+        ],
+      },
+    ],
+    [roles],
+  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => setLoading(false), 350);
     return () => window.clearTimeout(timer);
   }, []);
+
+  const handleCreateUser = async (values: Record<string, string>) => {
+    if (store.isUsernameTaken(values.username)) {
+      error('Username taken', 'Choose a different username.');
+      return;
+    }
+    setSavingUser(true);
+    try {
+      const created = await store.createUser({
+        full_name: values.full_name.trim(),
+        username: values.username.trim(),
+        email: values.email.trim(),
+        phone: values.phone.trim(),
+        role_id: values.role_id,
+        status: (values.status as User['status']) || 'active',
+      });
+      store.addAuditLog({
+        user_id: currentUser?.user_id ?? 'usr_001',
+        action: 'CREATE',
+        table_name: 'app_users',
+        record_id: created.user_id,
+        ip_address: '127.0.0.1',
+      });
+      setAddOpen(false);
+      success('User added', `${created.full_name} can be granted login access via the auth bootstrap.`);
+    } catch (err) {
+      error('Could not add user', err instanceof Error ? err.message : 'Save failed.');
+    } finally {
+      setSavingUser(false);
+    }
+  };
+
+  const handleDeleteUser = async (target: UserRow) => {
+    if (target.user_id === currentUser?.user_id) {
+      error('Cannot delete', 'You cannot delete your own account.');
+      return;
+    }
+    const isTargetAdmin = target.role_id === ADMIN_ROLE_ID || target.roleName === 'Admin';
+    if (isTargetAdmin) {
+      const adminCount = users.filter(
+        (u) => u.role_id === ADMIN_ROLE_ID || u.roleName === 'Admin',
+      ).length;
+      if (adminCount <= 1) {
+        error('Cannot delete', 'At least one admin must remain.');
+        return;
+      }
+    }
+    if (!window.confirm(`Delete ${target.full_name}? This cannot be undone.`)) return;
+
+    try {
+      await store.deleteUser(target.user_id);
+      store.addAuditLog({
+        user_id: currentUser?.user_id ?? 'usr_001',
+        action: 'DELETE',
+        table_name: 'app_users',
+        record_id: target.user_id,
+        ip_address: '127.0.0.1',
+      });
+      info('User removed', `${target.full_name} was deleted.`);
+    } catch (err) {
+      error('Could not delete user', err instanceof Error ? err.message : 'Delete failed.');
+    }
+  };
+
+  const handleSaveRolePermissions = async (permissionIds: string[]) => {
+    if (!roleToEdit) return;
+    setSavingRole(true);
+    try {
+      await store.setRolePermissions(roleToEdit.role_id, permissionIds);
+      store.addAuditLog({
+        user_id: currentUser?.user_id ?? 'usr_001',
+        action: 'UPDATE',
+        table_name: 'role_permissions',
+        record_id: roleToEdit.role_id,
+        ip_address: '127.0.0.1',
+      });
+      success('Access updated', `${roleToEdit.role_name} permissions saved.`);
+      setRoleToEdit(null);
+    } catch (err) {
+      error('Could not update access', err instanceof Error ? err.message : 'Save failed.');
+    } finally {
+      setSavingRole(false);
+    }
+  };
 
   if (!canManageUsers) {
     return (
@@ -319,7 +600,12 @@ export function UsersPage() {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <PageHeader
         title="Users & Roles"
-        subtitle={`${users.length} team members · ${roles.length} roles · read-only view`}
+        subtitle={`${users.length} team members · ${roles.length} roles${isAdmin ? '' : ' · read-only view'}`}
+        actions={
+          isAdmin ? (
+            <Button onClick={() => setAddOpen(true)}>+ Add user</Button>
+          ) : undefined
+        }
       />
 
       <Tabs defaultValue="users">
@@ -335,7 +621,12 @@ export function UsersPage() {
               <EmptyState title="No users found" description="User accounts will appear here." />
             </Card>
           ) : (
-            <UsersTable users={users} />
+            <UsersTable
+              users={users}
+              isAdmin={isAdmin}
+              currentUserId={currentUser?.user_id}
+              onDelete={handleDeleteUser}
+            />
           )}
         </TabsContent>
 
@@ -345,7 +636,7 @@ export function UsersPage() {
               <EmptyState title="No roles defined" description="System roles will appear here." />
             </Card>
           ) : (
-            <RolesPanel roles={roles} />
+            <RolesPanel roles={roles} isAdmin={isAdmin} onEditPermissions={setRoleToEdit} />
           )}
         </TabsContent>
 
@@ -362,6 +653,29 @@ export function UsersPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      <EditRecordModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        title="Add user"
+        description="Create a team member profile. Grant login access afterwards via the auth bootstrap."
+        fields={userFields}
+        values={NEW_USER_DEFAULTS}
+        onSave={handleCreateUser}
+        saving={savingUser}
+        saveLabel="Add user"
+      />
+
+      <RolePermissionsModal
+        role={roleToEdit}
+        permissions={permissions}
+        currentPermissionIds={
+          roleToEdit ? roleToEdit.permissions.map((p) => p.permission_id) : []
+        }
+        saving={savingRole}
+        onClose={() => setRoleToEdit(null)}
+        onSave={handleSaveRolePermissions}
+      />
     </motion.div>
   );
 }

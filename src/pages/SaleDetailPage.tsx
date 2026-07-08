@@ -47,6 +47,10 @@ export function SaleDetailPage() {
   const delivery = sale
     ? store.getDeliveryRecords().find((d) => d.sale_id === sale.sale_id)
     : undefined;
+  const acquisition = vehicle ? store.getPurchaseById(vehicle.purchase_id) : undefined;
+  const acquisitionSeller = acquisition
+    ? store.getCustomerById(acquisition.seller_customer_id)
+    : undefined;
 
   const [paymentForm, setPaymentForm] = useState({
     payment_date: new Date().toISOString().slice(0, 10),
@@ -242,22 +246,49 @@ export function SaleDetailPage() {
               <InfoItem label="Payment method" value={sale.payment_method.replace('_', ' ')} />
             </dl>
 
-            {customer && (
-              <div className="mt-6 border-t border-[var(--border-secondary)] pt-4">
+            <div className="mt-6 grid gap-4 border-t border-[var(--border-secondary)] pt-4 sm:grid-cols-2">
+              <div>
                 <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
-                  Buyer
+                  Sold by
                 </p>
-                <Link
-                  to={`/customers/${customer.customer_id}`}
-                  className="mt-1 block font-medium text-accent hover:underline"
-                >
-                  {customer.full_name}
-                </Link>
-                <p className="text-sm text-[var(--text-secondary)]">
-                  {customer.mobile} · {customer.city}
+                <p className="mt-1 font-medium text-[var(--text-primary)]">
+                  {sale.salesperson || 'Not recorded'}
                 </p>
+                <p className="text-sm text-[var(--text-secondary)]">Salesperson</p>
               </div>
-            )}
+              {customer && (
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
+                    Purchased by
+                  </p>
+                  <Link
+                    to={`/customers/${customer.customer_id}`}
+                    className="mt-1 block font-medium text-accent hover:underline"
+                  >
+                    {customer.full_name}
+                  </Link>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    {customer.mobile} · {customer.city}
+                  </p>
+                </div>
+              )}
+              {acquisitionSeller && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
+                    Originally acquired from
+                  </p>
+                  <Link
+                    to={`/customers/${acquisitionSeller.customer_id}`}
+                    className="mt-1 block font-medium text-accent hover:underline"
+                  >
+                    {acquisitionSeller.full_name}
+                  </Link>
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    {acquisitionSeller.mobile} · {acquisitionSeller.city}
+                  </p>
+                </div>
+              )}
+            </div>
         </EditableCard>
 
         <Card padding="md">

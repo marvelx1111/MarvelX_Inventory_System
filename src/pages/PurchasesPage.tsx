@@ -18,8 +18,9 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
-import type { CustomerType, PaymentMethod } from '@/types';
-import { formatDate, formatPKR } from '@/utils/format';
+import type { BiometricStatus, CustomerType, PaymentMethod } from '@/types';
+import { BIOMETRIC_OPTIONS, DOCUMENT_CHECKLIST_ITEMS } from '@/utils/constants';
+import { cn, formatDate, formatPKR } from '@/utils/format';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
 
@@ -70,11 +71,24 @@ const initialForm = {
   transmission: 'Automatic',
 };
 
+const initialDocForm = {
+  biometric_status: 'not_taken' as BiometricStatus,
+  original_file: false,
+  registration_book: false,
+  tax_token: false,
+  spare_key: false,
+  spare_wheel: false,
+  tool_kit: false,
+  user_manual: false,
+  insurance: false,
+};
+
 export function PurchasesPage() {
   const loading = usePageLoading();
   const { user } = useAuth();
   const { success, error } = useToast();
   const [form, setForm] = useState(initialForm);
+  const [docForm, setDocForm] = useState(initialDocForm);
   const [submitting, setSubmitting] = useState(false);
   const [createSellerOpen, setCreateSellerOpen] = useState(false);
   const [creatingSeller, setCreatingSeller] = useState(false);
@@ -111,7 +125,11 @@ export function PurchasesPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const toggleDoc = (key: keyof typeof initialDocForm) => {
+    setDocForm((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.seller_customer_id || !form.make || !form.model || !form.purchase_price) {
       error('Missing fields', 'Please fill in all required fields');
@@ -119,8 +137,8 @@ export function PurchasesPage() {
     }
 
     setSubmitting(true);
-    window.setTimeout(() => {
-      const result = store.createPurchase({
+    try {
+      const result = await store.createPurchase({
         seller_customer_id: form.seller_customer_id,
         purchase_date: form.purchase_date,
         purchase_price: Number(form.purchase_price),
@@ -143,6 +161,17 @@ export function PurchasesPage() {
           purchase_price: Number(form.purchase_price),
           purchase_date: form.purchase_date,
         },
+        document: {
+          biometric_status: docForm.biometric_status,
+          original_file: docForm.original_file,
+          registration_book: docForm.registration_book,
+          tax_token: docForm.tax_token,
+          spare_key: docForm.spare_key,
+          spare_wheel: docForm.spare_wheel,
+          tool_kit: docForm.tool_kit,
+          user_manual: docForm.user_manual,
+          insurance: docForm.insurance,
+        },
       });
 
       store.addAuditLog({
@@ -158,9 +187,13 @@ export function PurchasesPage() {
         `${result.vehicle.make} ${result.vehicle.model} added as ${result.vehicle.stock_number}`,
       );
       setForm(initialForm);
-      setSubmitting(false);
+      setDocForm(initialDocForm);
       refresh((n) => n + 1);
-    }, 300);
+    } catch (err) {
+      error('Could not save purchase', err instanceof Error ? err.message : 'Save failed.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -289,6 +322,61 @@ export function PurchasesPage() {
                     label="Chassis number"
                     value={form.chassis_number}
                     onChange={(e) => update('chassis_number', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-[var(--border-secondary)] pt-4">
+                <p className="mb-1 text-sm font-medium text-[var(--text-primary)]">
+                  Document checklist
+                </p>
+                <p className="mb-3 text-xs text-[var(--text-tertiary)]">
+                  Mark items received with the vehicle. You can update these later from the vehicle
+                  page.
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {DOCUMENT_CHECKLIST_ITEMS.map((item) => {
+                    const checked = docForm[item.key as keyof typeof initialDocForm] as boolean;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => toggleDoc(item.key as keyof typeof initialDocForm)}
+                        aria-pressed={checked}
+                        className={cn(
+                          'flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors',
+                          checked
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                            : 'border-[var(--border-primary)] bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:border-[var(--border-secondary)]',
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold text-white',
+                            checked
+                              ? 'border-emerald-500 bg-emerald-500'
+                              : 'border-[var(--border-primary)] bg-transparent',
+                          )}
+                        >
+                          {checked ? '✓' : ''}
+                        </span>
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-4 max-w-xs">
+                  <Select
+                    label="Biometric"
+                    value={docForm.biometric_status}
+                    onChange={(e) =>
+                      setDocForm((prev) => ({
+                        ...prev,
+                        biometric_status: e.target.value as BiometricStatus,
+                      }))
+                    }
+                    options={BIOMETRIC_OPTIONS}
                   />
                 </div>
               </div>

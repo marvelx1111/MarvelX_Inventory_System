@@ -1,5 +1,12 @@
 import { createSeedData } from '@/data/seed';
-import { persistRowInsert, persistRowUpdate, type PersistResult } from '@/data/supabase-sync';
+import {
+  persistRowDelete,
+  persistRowInsert,
+  persistRowsDeleteByColumn,
+  persistRowsInsert,
+  persistRowUpdate,
+  type PersistResult,
+} from '@/data/supabase-sync';
 
 function ensurePersisted(result: PersistResult): void {
   if (!result.ok) throw new Error(result.error);
@@ -11,6 +18,7 @@ import type {
   CreatePPFJobInput,
   CreatePurchaseInput,
   CreateSaleInput,
+  CreateUserInput,
   Customer,
   DeliveryRecord,
   ExpenseCategory,
@@ -217,6 +225,84 @@ class DataStore {
     this.notify();
   }
 
+  async createUser(input: CreateUserInput): Promise<User> {
+    const user: User = {
+      user_id: this.nextId('usr'),
+      role_id: input.role_id,
+      full_name: input.full_name,
+      username: input.username,
+      email: input.email,
+      phone: input.phone,
+      status: input.status,
+      auth_user_id: null,
+    };
+
+    this.data.users.push(user);
+    ensurePersisted(
+      await persistRowInsert('app_users', {
+        user_id: user.user_id,
+        role_id: user.role_id,
+        full_name: user.full_name,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        status: user.status,
+        auth_user_id: null,
+      }),
+    );
+    this.revision += 1;
+    this.notify();
+    return user;
+  }
+
+  async updateUserRecord(
+    userId: string,
+    updates: Partial<Pick<User, 'full_name' | 'email' | 'phone' | 'role_id' | 'status'>>,
+  ): Promise<User | null> {
+    const index = this.data.users.findIndex((u) => u.user_id === userId);
+    if (index === -1) return null;
+
+    this.data.users[index] = { ...this.data.users[index], ...updates };
+    ensurePersisted(await persistRowUpdate('app_users', 'user_id', userId, updates));
+    this.revision += 1;
+    this.notify();
+    return this.data.users[index];
+  }
+
+  async deleteUser(userId: string): Promise<boolean> {
+    const index = this.data.users.findIndex((u) => u.user_id === userId);
+    if (index === -1) return false;
+
+    this.data.users.splice(index, 1);
+    ensurePersisted(await persistRowDelete('app_users', 'user_id', userId));
+    this.revision += 1;
+    this.notify();
+    return true;
+  }
+
+  /** Replace the full permission set for a role and sync to Supabase. */
+  async setRolePermissions(roleId: string, permissionIds: string[]): Promise<void> {
+    const unique = [...new Set(permissionIds)];
+    this.data.rolePermissions = this.data.rolePermissions.filter((rp) => rp.role_id !== roleId);
+    for (const permissionId of unique) {
+      this.data.rolePermissions.push({ role_id: roleId, permission_id: permissionId });
+    }
+
+    ensurePersisted(await persistRowsDeleteByColumn('role_permissions', 'role_id', roleId));
+    ensurePersisted(
+      await persistRowsInsert(
+        'role_permissions',
+        unique.map((permissionId) => ({ role_id: roleId, permission_id: permissionId })),
+      ),
+    );
+    this.revision += 1;
+    this.notify();
+  }
+
+  isUsernameTaken(username: string): boolean {
+    return this.data.users.some((u) => u.username.toLowerCase() === username.trim().toLowerCase());
+  }
+
   /** Local dev only — gated by VITE_ALLOW_DEMO_AUTH in AuthContext */
   authenticateDemo(username: string, password: string): User | null {
     const demoPasswords: Record<string, string> = {
@@ -388,7 +474,9 @@ class DataStore {
     return this.data.ppfJobCards.find((j) => j.job_id === id);
   }
 
-  createPurchase(input: CreatePurchaseInput): { purchase: Purchase; vehicle: Vehicle; document: VehicleDocument } {
+  async createPurchase(
+    input: CreatePurchaseInput,
+  ): Promise<{ purchase: Purchase; vehicle: Vehicle; document: VehicleDocument }> {
     const purchaseId = this.nextId('pur');
     const vehicleId = this.nextId('veh');
     const documentId = this.nextId('doc');
@@ -426,28 +514,36 @@ class DataStore {
       purchase_date: input.purchase_date,
     };
 
+    const doc = input.document;
     const document: VehicleDocument = {
       document_id: documentId,
       vehicle_id: vehicleId,
-      smart_card_status: 'pending',
+      smart_card_status: doc?.smart_card_status ?? 'pending',
       smart_card_count: 0,
-      biometric_required: false,
-      biometric_completed: false,
-      original_file: false,
-      registration_book: false,
-      tax_token: false,
-      spare_key: false,
-      spare_wheel: false,
-      tool_kit: false,
-      user_manual: false,
-      insurance: false,
-      remarks: '',
+      biometric_required: doc ? doc.biometric_status !== 'not_taken' : false,
+      biometric_completed: doc ? doc.biometric_status === 'done' : false,
+      biometric_status: doc?.biometric_status ?? 'not_taken',
+      original_file: doc?.original_file ?? false,
+      registration_book: doc?.registration_book ?? false,
+      tax_token: doc?.tax_token ?? false,
+      spare_key: doc?.spare_key ?? false,
+      spare_wheel: doc?.spare_wheel ?? false,
+      tool_kit: doc?.tool_kit ?? false,
+      user_manual: doc?.user_manual ?? false,
+      insurance: doc?.insurance ?? false,
+      remarks: doc?.remarks ?? '',
     };
 
     this.data.purchases.push(purchase);
     this.data.vehicles.push(vehicle);
     this.data.vehicleDocuments.push(document);
 
+    ensurePersisted(await persistRowInsert('purchases', purchase as unknown as Record<string, unknown>));
+    ensurePersisted(await persistRowInsert('vehicles', vehicle as unknown as Record<string, unknown>));
+    ensurePersisted(await persistRowInsert('vehicle_documents', document as unknown as Record<string, unknown>));
+
+    this.revision += 1;
+    this.notify();
     return { purchase, vehicle, document };
   }
 

@@ -30,6 +30,45 @@ export async function persistRowInsert(
   return { ok: true, persisted: true };
 }
 
+export async function persistRowDelete(
+  table: string,
+  idColumn: string,
+  id: string,
+): Promise<PersistResult> {
+  const client = getSupabaseBrowserClient();
+  if (!client) return { ok: true, persisted: false };
+
+  const { error } = await client.from(table).delete().eq(idColumn, id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, persisted: true };
+}
+
+export async function persistRowsInsert(
+  table: string,
+  rows: Record<string, unknown>[],
+): Promise<PersistResult> {
+  const client = getSupabaseBrowserClient();
+  if (!client) return { ok: true, persisted: false };
+  if (rows.length === 0) return { ok: true, persisted: true };
+
+  const { error } = await client.from(table).insert(rows);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, persisted: true };
+}
+
+export async function persistRowsDeleteByColumn(
+  table: string,
+  column: string,
+  value: string,
+): Promise<PersistResult> {
+  const client = getSupabaseBrowserClient();
+  if (!client) return { ok: true, persisted: false };
+
+  const { error } = await client.from(table).delete().eq(column, value);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, persisted: true };
+}
+
 export function persistErrorMessage(result: PersistResult): string | null {
   if (!result.ok) return result.error;
   if (!result.persisted) {
