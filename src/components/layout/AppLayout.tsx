@@ -19,7 +19,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-[var(--border-primary)] bg-[var(--bg-primary)]/80 px-4 backdrop-blur-md md:px-6">
+        <header className="no-print sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-[var(--border-primary)] bg-[var(--bg-primary)]/80 px-4 backdrop-blur-md md:px-6">
           <div className="flex min-w-0 items-center gap-3 md:hidden">
             <div
               className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white"

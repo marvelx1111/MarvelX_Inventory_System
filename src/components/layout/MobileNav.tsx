@@ -16,7 +16,7 @@ export function MobileNav() {
   );
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border-primary)] bg-[var(--bg-elevated)]/95 backdrop-blur-md md:hidden">
+    <nav className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border-primary)] bg-[var(--bg-elevated)]/95 backdrop-blur-md md:hidden">
       <div className="mx-auto flex max-w-lg items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
         {items.map((item) => (
           <NavLink

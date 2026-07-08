@@ -87,7 +87,7 @@ export function InventoryPage() {
         subtitle={`${filtered.length} of ${vehicles.length} vehicles`}
       />
 
-      <Card padding="md" className="mb-6">
+      <Card padding="md" className="no-print mb-6">
         <div className="space-y-4">
           <SearchInput
             placeholder="Search stock, make, model..."

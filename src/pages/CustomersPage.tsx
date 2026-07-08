@@ -117,7 +117,7 @@ export function CustomersPage() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         onClear={() => setSearch('')}
-        containerClassName="mb-6 max-w-md"
+        containerClassName="no-print mb-6 max-w-md"
       />
 
       {filtered.length === 0 ? (

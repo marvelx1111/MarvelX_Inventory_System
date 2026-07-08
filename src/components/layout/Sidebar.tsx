@@ -22,7 +22,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       initial={false}
       animate={{ width: collapsed ? 72 : 260 }}
       transition={{ type: 'spring', stiffness: 400, damping: 34 }}
-      className="hidden h-screen shrink-0 flex-col border-r border-[var(--border-primary)] bg-[var(--bg-sidebar)] md:flex"
+      className="no-print hidden h-screen shrink-0 flex-col border-r border-[var(--border-primary)] bg-[var(--bg-sidebar)] md:flex"
       style={{ background: 'var(--gradient-sidebar)' }}
     >
       <div className="flex h-16 items-center gap-3 border-b border-[var(--border-secondary)] px-4">

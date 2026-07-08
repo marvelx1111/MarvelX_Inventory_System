@@ -250,7 +250,7 @@ export function AuditLogPage() {
         }
       />
 
-      <Card className="mb-6" padding="md">
+      <Card className="no-print mb-6" padding="md">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Select
             label="Action"

@@ -14,7 +14,7 @@ export function DataConnectionBanner() {
   return (
     <div
       role="alert"
-      className={`border-b px-4 py-2.5 text-sm md:px-8 ${
+      className={`no-print border-b px-4 py-2.5 text-sm md:px-8 ${
         isError
           ? 'border-amber-500/30 bg-amber-500/10 text-amber-100'
           : 'border-amber-500/30 bg-amber-500/10 text-amber-100'

@@ -41,7 +41,7 @@ export function EditableCard({
               type="button"
               variant="secondary"
               size="sm"
-              className="shrink-0 border-accent/30 text-accent hover:bg-accent/10"
+              className="no-print shrink-0 border-accent/30 text-accent hover:bg-accent/10"
               onClick={onEdit}
               icon={
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

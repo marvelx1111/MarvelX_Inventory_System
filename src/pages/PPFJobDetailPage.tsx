@@ -239,7 +239,7 @@ export function PPFJobDetailPage() {
       />
 
       {nextStatuses.length > 0 && (
-        <Card className="mb-6 border-accent/20 bg-accent/5" padding="md">
+        <Card className="no-print mb-6 border-accent/20 bg-accent/5" padding="md">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-medium text-[var(--text-primary)]">Update job status</p>

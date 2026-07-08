@@ -68,10 +68,12 @@ async function main() {
 
     const passwordEnvKey = PASSWORD_ENV_KEYS[appUser.user_id];
     const password = passwordEnvKey ? merged[passwordEnvKey] : '';
-    if (!password || password.length < 12) {
-      console.error(
-        `  ✗ Set ${passwordEnvKey ?? 'AUTH_PASSWORD_*'} (min 12 chars) for ${appUser.email}`,
-      );
+    if (!password) {
+      console.log(`  ↷ ${appUser.email} skipped (no ${passwordEnvKey ?? 'AUTH_PASSWORD_*'} set)`);
+      continue;
+    }
+    if (password.length < 6) {
+      console.error(`  ✗ ${passwordEnvKey} must be at least 6 characters for ${appUser.email}`);
       process.exit(1);
     }
 

@@ -321,7 +321,7 @@ export function SaleDetailPage() {
         </Card>
 
         {sale.balance > 0 && (
-          <Card padding="md">
+          <Card padding="md" className="no-print">
             <CardHeader>
               <CardTitle>Add Payment</CardTitle>
             </CardHeader>

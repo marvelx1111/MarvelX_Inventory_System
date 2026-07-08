@@ -185,7 +185,7 @@ export function PurchasesPage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <Card padding="md" className="lg:col-span-3">
+        <Card padding="md" className="no-print lg:col-span-3">
           <CardHeader>
             <CardTitle>New Purchase</CardTitle>
           </CardHeader>

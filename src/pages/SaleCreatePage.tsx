@@ -165,6 +165,7 @@ export function SaleCreatePage() {
       <PageHeader
         title="New Sale"
         subtitle="Create a vehicle sale in three simple steps"
+        printable={false}
         actions={
           <Button variant="secondary" onClick={() => navigate('/sales')}>
             Cancel
