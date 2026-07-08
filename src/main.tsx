@@ -11,15 +11,15 @@ import './index.css';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <DataProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <DataProvider>
           <ToastProvider>
             <BrowserRouter>
               <App />
             </BrowserRouter>
           </ToastProvider>
-        </AuthProvider>
-      </DataProvider>
+        </DataProvider>
+      </AuthProvider>
     </ThemeProvider>
   </StrictMode>,
 );

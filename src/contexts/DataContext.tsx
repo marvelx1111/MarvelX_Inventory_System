@@ -7,8 +7,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { fetchAllFromSupabase, testSupabaseConnection } from '@/data/supabase-loader';
 import { store } from '@/data/store';
+import { isDemoAuthEnabled } from '@/lib/auth';
 import { getSupabaseBrowserClient, isSupabaseConfigured } from '@/lib/supabase';
 
 type DataSource = 'loading' | 'supabase' | 'local';
@@ -24,24 +26,39 @@ interface DataContextValue {
 const DataContext = createContext<DataContextValue | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated, authStatus } = useAuth();
   const [source, setSource] = useState<DataSource>('loading');
   const [status, setStatus] = useState<DataStatus>('loading');
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setStatus('loading');
     setError(null);
 
-    if (!isSupabaseConfigured()) {
+    if (authStatus === 'loading') {
+      setStatus('loading');
+      return;
+    }
+
+    if (!isSupabaseConfigured() || isDemoAuthEnabled()) {
       setSource('local');
       setStatus('ready');
       return;
     }
 
+    if (!isAuthenticated) {
+      store.reset();
+      setSource('loading');
+      setStatus('ready');
+      return;
+    }
+
+    setStatus('loading');
+
     const client = getSupabaseBrowserClient();
     if (!client) {
       setSource('local');
-      setStatus('ready');
+      setStatus('error');
+      setError('Supabase client unavailable.');
       return;
     }
 
@@ -62,7 +79,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setSource('local');
       setStatus('error');
     }
-  }, []);
+  }, [authStatus, isAuthenticated]);
 
   useEffect(() => {
     void load();

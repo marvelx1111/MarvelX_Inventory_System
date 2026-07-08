@@ -20,13 +20,48 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173)
 
-## Demo Accounts
+## Authentication (Supabase Auth)
+
+Production login uses **Supabase Auth** (email + password). Passwords are hashed server-side by Supabase — they are never stored in `app_users`.
+
+### One-time setup
+
+1. Add to `.env.local` (never commit these):
+
+```bash
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+AUTH_PASSWORD_ADMIN=choose-a-strong-password-min-12-chars
+AUTH_PASSWORD_SALES=choose-a-strong-password-min-12-chars
+AUTH_PASSWORD_PPF=choose-a-strong-password-min-12-chars
+```
+
+2. Bootstrap auth accounts (links `app_users` → `auth.users`):
+
+```bash
+npm run db:auth-bootstrap
+```
+
+3. Sign in at `/login` with email (e.g. `admin@marvelx.pk`) and the password you set above.
+
+### Local demo mode (development only)
+
+To use offline mock login without Supabase Auth, set in `.env.local`:
+
+```bash
+VITE_ALLOW_DEMO_AUTH=true
+```
+
+This is disabled in production builds when Supabase is configured.
+
+## Demo Accounts (local demo mode only)
 
 | Username | Password | Role |
 |----------|----------|------|
 | `admin` | `admin123` | Full access |
 | `sales` | `sales123` | Sales & inventory |
 | `ppf_manager` | `ppf123` | PPF studio only |
+
+**Do not use these in production.** Use `db:auth-bootstrap` with strong passwords instead.
 
 ## Features
 

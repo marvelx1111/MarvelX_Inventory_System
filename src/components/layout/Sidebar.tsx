@@ -153,7 +153,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </button>
           <button
             type="button"
-            onClick={logout}
+            onClick={() => void logout()}
             title="Sign out"
             className="flex flex-1 items-center justify-center rounded-lg p-2 text-[var(--text-secondary)] transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
           >

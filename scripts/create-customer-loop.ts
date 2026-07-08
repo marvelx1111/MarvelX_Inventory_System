@@ -3,15 +3,17 @@
  * Run: npx tsx scripts/create-customer-loop.ts [baseUrl]
  */
 import { chromium } from 'playwright';
+import { requireAdminTestCredentials } from './auth-env.ts';
 
 const BASE = process.argv[2] ?? 'http://localhost:5173';
 
 type Result = { label: string; ok: boolean; detail: string };
 
 async function login(page: import('playwright').Page) {
+  const { adminEmail, adminPassword } = requireAdminTestCredentials();
   await page.goto(`${BASE}/login`, { waitUntil: 'networkidle', timeout: 30000 });
-  await page.getByLabel(/username/i).fill('admin');
-  await page.getByLabel(/password/i).fill('admin123');
+  await page.getByLabel(/email|username/i).fill(adminEmail);
+  await page.getByLabel(/password/i).fill(adminPassword);
   await page.getByRole('button', { name: /sign in/i }).click();
   await page.waitForURL(`${BASE}/`, { timeout: 15000 });
 }

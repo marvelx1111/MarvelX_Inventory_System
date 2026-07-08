@@ -48,7 +48,7 @@ function mapUsers(rows: Record<string, unknown>[]): User[] {
     email: String(row.email ?? ''),
     phone: String(row.phone ?? ''),
     status: row.status as User['status'],
-    password: String(row.password_hash),
+    auth_user_id: row.auth_user_id ? String(row.auth_user_id) : null,
   }));
 }
 
@@ -63,7 +63,9 @@ export async function fetchAllFromSupabase(client: SupabaseClient): Promise<AppD
     (result as unknown as Record<string, unknown>)[key] = data ?? [];
   }
 
-  const { data: userRows, error: userError } = await client.from('app_users').select('*');
+  const { data: userRows, error: userError } = await client
+    .from('app_users')
+    .select('user_id, role_id, full_name, username, email, phone, status, auth_user_id');
   if (userError) {
     throw new Error(`Failed to load app_users: ${userError.message}`);
   }

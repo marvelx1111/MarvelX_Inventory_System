@@ -30,7 +30,7 @@ export interface User {
   email: string;
   phone: string;
   status: UserStatus;
-  password: string;
+  auth_user_id: string | null;
 }
 
 export interface Customer {

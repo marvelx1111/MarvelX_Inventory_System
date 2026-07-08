@@ -50,7 +50,7 @@ export function createSeedData(): AppData {
         email: 'admin@marvelx.pk',
         phone: '0300-1112233',
         status: 'active',
-        password: 'admin123',
+        auth_user_id: null,
       },
       {
         user_id: 'usr_002',
@@ -60,7 +60,7 @@ export function createSeedData(): AppData {
         email: 'sales@marvelx.pk',
         phone: '0321-4455667',
         status: 'active',
-        password: 'sales123',
+        auth_user_id: null,
       },
       {
         user_id: 'usr_003',
@@ -70,7 +70,7 @@ export function createSeedData(): AppData {
         email: 'ppf@marvelx.pk',
         phone: '0333-7788990',
         status: 'active',
-        password: 'ppf123',
+        auth_user_id: null,
       },
     ],
 

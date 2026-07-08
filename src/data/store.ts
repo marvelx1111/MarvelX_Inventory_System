@@ -132,15 +132,32 @@ export interface GlobalSearchResult {
 class DataStore {
   private data: AppData;
   private idCounters: Record<string, number>;
+  private revision = 0;
+  private listeners = new Set<() => void>();
 
   constructor() {
     this.data = createSeedData();
     this.idCounters = this.buildIdCounters();
   }
 
+  getRevision(): number {
+    return this.revision;
+  }
+
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private notify(): void {
+    this.listeners.forEach((listener) => listener());
+  }
+
   hydrate(data: AppData): void {
     this.data = data;
     this.idCounters = this.buildIdCounters();
+    this.revision += 1;
+    this.notify();
   }
 
   isHydratedFromSupabase(): boolean {
@@ -185,13 +202,33 @@ class DataStore {
   reset(): void {
     this.data = createSeedData();
     this.idCounters = this.buildIdCounters();
+    this.revision += 1;
+    this.notify();
   }
 
-  authenticate(username: string, password: string): User | null {
-    const user = this.data.users.find(
-      (u) => u.username === username && u.password === password && u.status === 'active',
+  upsertUser(user: User): void {
+    const index = this.data.users.findIndex((u) => u.user_id === user.user_id);
+    if (index >= 0) {
+      this.data.users[index] = user;
+    } else {
+      this.data.users.push(user);
+    }
+    this.revision += 1;
+    this.notify();
+  }
+
+  /** Local dev only — gated by VITE_ALLOW_DEMO_AUTH in AuthContext */
+  authenticateDemo(username: string, password: string): User | null {
+    const demoPasswords: Record<string, string> = {
+      admin: 'admin123',
+      sales: 'sales123',
+      ppf_manager: 'ppf123',
+    };
+    const expected = demoPasswords[username];
+    if (!expected || expected !== password) return null;
+    return (
+      this.data.users.find((u) => u.username === username && u.status === 'active') ?? null
     );
-    return user ?? null;
   }
 
   getUserPermissions(userId: string): string[] {

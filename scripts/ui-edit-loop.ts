@@ -3,17 +3,26 @@
  * Run: npx tsx scripts/ui-edit-loop.ts [baseUrl]
  */
 import { chromium, type Page } from 'playwright';
+import { requireAdminTestCredentials } from './auth-env.ts';
 
 const BASE = process.argv[2] ?? 'http://localhost:5173';
 
 type Result = { label: string; ok: boolean; detail: string };
 
-async function login(page: Page, username: string, password: string) {
+async function login(page: Page, email: string, password: string) {
   await page.goto(`${BASE}/login`, { waitUntil: 'networkidle', timeout: 30000 });
-  await page.getByLabel(/username/i).fill(username);
+  await page.getByLabel(/email|username/i).fill(email);
   await page.getByLabel(/password/i).fill(password);
   await page.getByRole('button', { name: /sign in/i }).click();
   await page.waitForURL(`${BASE}/`, { timeout: 15000 });
+}
+
+async function signOut(page: Page) {
+  await page.evaluate(() => {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('sb-')) localStorage.removeItem(key);
+    }
+  });
 }
 
 async function countEditButtons(page: Page) {
@@ -21,13 +30,14 @@ async function countEditButtons(page: Page) {
 }
 
 async function main() {
+  const { adminEmail, adminPassword, salesEmail, salesPassword } = requireAdminTestCredentials();
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   const results: Result[] = [];
 
   try {
     // --- Admin via customer list navigation ---
-    await login(page, 'admin', 'admin123');
+    await login(page, adminEmail, adminPassword);
 
     const demoBanner = await page.getByText(/Demo mode|Database connection failed/i).count();
     results.push({
@@ -78,12 +88,10 @@ async function main() {
     }
 
     // --- Sales account should not edit ---
-    await page.evaluate(() => localStorage.removeItem('marvel-x-session'));
+    await signOut(page);
     await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
-    await page.getByLabel(/username/i).fill('sales');
-    await page.getByLabel(/password/i).fill('sales123');
-    await page.getByRole('button', { name: /sign in/i }).click();
-    await page.waitForURL(`${BASE}/`, { timeout: 15000 });
+    if (!salesPassword) throw new Error('Set AUTH_PASSWORD_SALES in .env.local');
+    await login(page, salesEmail, salesPassword);
     await page.goto(`${BASE}/customers/cus_001`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(800);
     const salesEditCount = await countEditButtons(page);
@@ -95,8 +103,8 @@ async function main() {
 
     // --- Mobile admin ---
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.evaluate(() => localStorage.removeItem('marvel-x-session'));
-    await login(page, 'admin', 'admin123');
+    await signOut(page);
+    await login(page, adminEmail, adminPassword);
     await page.goto(`${BASE}/customers/cus_001`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(800);
     const mobileEditCount = await countEditButtons(page);

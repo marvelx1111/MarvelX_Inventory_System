@@ -88,51 +88,55 @@ export function InventoryPage() {
       />
 
       <Card padding="md" className="mb-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="space-y-4">
           <SearchInput
             placeholder="Search stock, make, model..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onClear={() => setSearch('')}
-            containerClassName="sm:col-span-2 lg:col-span-2"
+            containerClassName="w-full"
           />
-          <Select
-            label="Make"
-            value={make}
-            onChange={(e) => setMake(e.target.value)}
-            placeholder="All makes"
-            options={makes.map((m) => ({ value: m, label: m }))}
-          />
-          <Select
-            label="Status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            placeholder="All statuses"
-            options={(
-              Object.entries(VEHICLE_STATUS_CONFIG) as [VehicleStatus, (typeof VEHICLE_STATUS_CONFIG)[VehicleStatus]][]
-            ).map(([value, cfg]) => ({ value, label: cfg.label }))}
-          />
-          <Select
-            label="Year"
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-            placeholder="All years"
-            options={years.map((y) => ({ value: String(y), label: String(y) }))}
-          />
-          <Input
-            label="Min price"
-            type="number"
-            placeholder="0"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-          />
-          <Input
-            label="Max price"
-            type="number"
-            placeholder="Any"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-          />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <Select
+              label="Make"
+              value={make}
+              onChange={(e) => setMake(e.target.value)}
+              placeholder="All makes"
+              options={makes.map((m) => ({ value: m, label: m }))}
+            />
+            <Select
+              label="Status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              placeholder="All statuses"
+              options={(
+                Object.entries(VEHICLE_STATUS_CONFIG) as [VehicleStatus, (typeof VEHICLE_STATUS_CONFIG)[VehicleStatus]][]
+              ).map(([value, cfg]) => ({ value, label: cfg.label }))}
+            />
+            <Select
+              label="Year"
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              placeholder="All years"
+              options={years.map((y) => ({ value: String(y), label: String(y) }))}
+            />
+            <div className="grid grid-cols-2 gap-3 sm:col-span-2 lg:col-span-3 xl:col-span-2">
+              <Input
+                label="Min price"
+                type="number"
+                placeholder="0"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+              />
+              <Input
+                label="Max price"
+                type="number"
+                placeholder="Any"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
         {hasFilters && (
           <button

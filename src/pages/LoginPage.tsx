@@ -5,43 +5,36 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { isDemoAuthEnabled } from '@/lib/auth';
 import { BRAND } from '@/utils/constants';
-
-const DEMO_ACCOUNTS = [
-  { username: 'admin', password: 'admin123', role: 'Admin — full access' },
-  { username: 'sales', password: 'sales123', role: 'Salesperson — showroom ops' },
-  { username: 'ppf_manager', password: 'ppf123', role: 'PPF Manager — studio only' },
-] as const;
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, usesSupabaseAuth } = useAuth();
   const { error: toastError, success } = useToast();
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    window.setTimeout(() => {
-      const ok = login(username.trim(), password);
-      setLoading(false);
+    const result = await login(identifier, password);
+    setLoading(false);
 
-      if (ok) {
-        success('Welcome back', `Signed in as ${username}`);
-        navigate('/', { replace: true });
-      } else {
-        toastError('Login failed', 'Invalid username or password');
-      }
-    }, 400);
+    if (result.ok) {
+      success('Welcome back', usesSupabaseAuth ? 'Signed in securely' : 'Signed in');
+      navigate('/', { replace: true });
+      return;
+    }
+
+    toastError('Login failed', result.message ?? 'Invalid credentials');
   };
 
-  const fillDemo = (user: string, pass: string) => {
-    setUsername(user);
-    setPassword(pass);
-  };
+  const identifierLabel = usesSupabaseAuth ? 'Email' : 'Username';
+  const identifierPlaceholder = usesSupabaseAuth ? 'you@marvelx.pk' : 'Enter username';
+  const identifierAutoComplete = usesSupabaseAuth ? 'email' : 'username';
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[var(--bg-primary)] p-4">
@@ -49,10 +42,10 @@ export function LoginPage() {
         className="pointer-events-none absolute inset-0"
         animate={{
           background: [
-            'radial-gradient(circle at 20% 20%, rgba(99,102,241,0.18) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(129,140,248,0.14) 0%, transparent 50%)',
-            'radial-gradient(circle at 80% 30%, rgba(99,102,241,0.2) 0%, transparent 50%), radial-gradient(circle at 20% 70%, rgba(165,180,252,0.12) 0%, transparent 50%)',
-            'radial-gradient(circle at 50% 50%, rgba(79,70,229,0.16) 0%, transparent 55%), radial-gradient(circle at 10% 90%, rgba(129,140,248,0.14) 0%, transparent 50%)',
-            'radial-gradient(circle at 20% 20%, rgba(99,102,241,0.18) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(129,140,248,0.14) 0%, transparent 50%)',
+            'radial-gradient(circle at 20% 20%, rgba(205,23,25,0.16) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(224,62,62,0.12) 0%, transparent 50%)',
+            'radial-gradient(circle at 80% 30%, rgba(205,23,25,0.18) 0%, transparent 50%), radial-gradient(circle at 20% 70%, rgba(168,18,22,0.1) 0%, transparent 50%)',
+            'radial-gradient(circle at 50% 50%, rgba(205,23,25,0.14) 0%, transparent 55%), radial-gradient(circle at 10% 90%, rgba(224,62,62,0.12) 0%, transparent 50%)',
+            'radial-gradient(circle at 20% 20%, rgba(205,23,25,0.16) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(224,62,62,0.12) 0%, transparent 50%)',
           ],
         }}
         transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
@@ -82,11 +75,12 @@ export function LoginPage() {
         <div className="rounded-2xl border border-[var(--border-primary)] bg-[var(--bg-secondary)]/80 p-6 shadow-[var(--shadow-lift)] backdrop-blur-sm sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter username"
-              autoComplete="username"
+              label={identifierLabel}
+              type={usesSupabaseAuth ? 'email' : 'text'}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder={identifierPlaceholder}
+              autoComplete={identifierAutoComplete}
               required
             />
             <Input
@@ -102,31 +96,14 @@ export function LoginPage() {
               Sign in
             </Button>
           </form>
-
-          <div className="mt-6 border-t border-[var(--border-secondary)] pt-6">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
-              Demo accounts
-            </p>
-            <div className="space-y-2">
-              {DEMO_ACCOUNTS.map((account) => (
-                <button
-                  key={account.username}
-                  type="button"
-                  onClick={() => fillDemo(account.username, account.password)}
-                  className="flex w-full items-center justify-between rounded-lg border border-[var(--border-primary)] bg-[var(--bg-tertiary)] px-3 py-2.5 text-left transition-colors hover:border-accent/40 hover:bg-[var(--bg-hover)]"
-                >
-                  <span className="text-sm font-medium text-[var(--text-primary)]">
-                    {account.username}
-                  </span>
-                  <span className="text-xs text-[var(--text-tertiary)]">{account.role}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         <p className="mt-6 text-center text-xs text-[var(--text-tertiary)]">
-          Mock authentication for demo purposes only
+          {usesSupabaseAuth
+            ? 'Secured with Supabase Auth. Passwords are hashed server-side.'
+            : isDemoAuthEnabled()
+              ? 'Local demo mode only — not for production.'
+              : 'Sign-in requires Supabase Auth configuration.'}
         </p>
       </motion.div>
     </div>

@@ -74,21 +74,30 @@ const INSERT_ORDER: (keyof AppData)[] = [
 ];
 
 function mapUsersForDb(users: AppData['users']) {
-  return users.map(({ password, ...user }) => ({
+  return users.map(({ auth_user_id, ...user }) => ({
     ...user,
-    password_hash: password,
+    auth_user_id,
   }));
 }
 
 async function main() {
   const fileEnv = loadEnvFile();
+  const merged = { ...fileEnv, ...process.env };
   const { url, anonKey } = getSupabaseEnv(fileEnv);
+  const serviceRoleKey = merged.SUPABASE_SERVICE_ROLE_KEY ?? '';
+
   if (!url || !anonKey) {
     console.error('Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY in .env.local');
     process.exit(1);
   }
+  if (!serviceRoleKey) {
+    console.error('Missing SUPABASE_SERVICE_ROLE_KEY in .env.local (required after auth migration)');
+    process.exit(1);
+  }
 
-  const supabase = createClient(url, anonKey);
+  const supabase = createClient(url, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
   const seed = createSeedData();
 
   console.log('Clearing existing Marvel X data (truncate via delete)...');

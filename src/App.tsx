@@ -23,8 +23,25 @@ import { PPFJobsPage } from '@/pages/PPFJobsPage';
 import { PPFRollsPage } from '@/pages/PPFRollsPage';
 import { UsersPage } from '@/pages/UsersPage';
 
+function AuthReadyGate({ children }: { children: React.ReactNode }) {
+  const { authStatus } = useAuth();
+  if (authStatus === 'loading') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)]">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          <p className="text-sm text-[var(--text-secondary)]">Checking session...</p>
+        </div>
+      </div>
+    );
+  }
+  return children;
+}
+
 function DataReadyGate({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
   const { status } = useDataSource();
+  if (!isAuthenticated) return children;
   if (status === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)]">
@@ -60,7 +77,8 @@ function PublicRoute() {
 
 export default function App() {
   return (
-    <DataReadyGate>
+    <AuthReadyGate>
+      <DataReadyGate>
       <Routes>
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<LoginPage />} />
@@ -118,6 +136,7 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-    </DataReadyGate>
+      </DataReadyGate>
+    </AuthReadyGate>
   );
 }

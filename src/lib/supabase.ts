@@ -14,11 +14,19 @@ export function getSupabaseBrowserClient(): SupabaseClient | null {
   if (!browserClient) {
     browserClient = createClient(url, anonKey, {
       auth: {
-        persistSession: false,
-        autoRefreshToken: false,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
       },
     });
   }
 
   return browserClient;
+}
+
+export async function signOutSupabase(): Promise<void> {
+  const client = getSupabaseBrowserClient();
+  if (client) {
+    await client.auth.signOut();
+  }
 }
