@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { VehicleCostBreakdown } from '@/components/sales/VehicleCostBreakdown';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -70,6 +71,7 @@ export function SaleCreatePage() {
   const selectedCustomer = store.getCustomerById(customerId);
 
   const totalCost = selectedVehicle?.total_cost ?? 0;
+  const purchasePrice = selectedVehicle?.purchase_price ?? 0;
   const sellingAmount = Number(sellingPrice) || 0;
   const paymentAmount = Math.min(Number(paymentReceived) || 0, sellingAmount);
   const customerOwed = Math.max(0, sellingAmount - paymentAmount);
@@ -252,7 +254,7 @@ export function SaleCreatePage() {
                           {v.make} {v.model} {v.model_year}
                         </p>
                         <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                          Total cost (incl. expenses) {formatPKR(v.total_cost)}
+                          Total cost {formatPKR(v.total_cost)} · Bought for {formatPKR(v.purchase_price)}
                         </p>
                       </button>
                     ))}
@@ -387,17 +389,15 @@ export function SaleCreatePage() {
               <CardContent className="space-y-4">
                 {selectedVehicle && (
                   <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-tertiary)] p-4">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
-                          Total cost (incl. expenses)
-                        </p>
-                        <p className="mt-1 text-lg font-bold text-[var(--text-primary)]">
-                          {formatPKR(totalCost)}
-                        </p>
+                    <div className="grid gap-4 lg:grid-cols-3">
+                      <div className="lg:col-span-2">
+                        <VehicleCostBreakdown
+                          totalCost={totalCost}
+                          purchasePrice={purchasePrice}
+                        />
                       </div>
                       {selectedCustomer && (
-                        <div>
+                        <div className="flex flex-col justify-center sm:border-l sm:border-[var(--border-secondary)] sm:pl-4">
                           <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
                             Buyer
                           </p>
@@ -458,9 +458,12 @@ export function SaleCreatePage() {
                 />
 
                 <div className="grid gap-3 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-tertiary)] p-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs text-[var(--text-tertiary)]">Total cost (incl. expenses)</p>
-                    <p className="text-lg font-bold text-[var(--text-primary)]">{formatPKR(totalCost)}</p>
+                  <div className="sm:col-span-2">
+                    <VehicleCostBreakdown
+                      totalCost={totalCost}
+                      purchasePrice={purchasePrice}
+                      compact
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-[var(--text-tertiary)]">Selling price</p>

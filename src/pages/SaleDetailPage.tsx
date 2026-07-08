@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { EditableCard } from '@/components/ui/EditableCard';
 import { EditRecordModal } from '@/components/ui/EditRecordModal';
+import { VehicleCostBreakdown } from '@/components/sales/VehicleCostBreakdown';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -56,6 +57,7 @@ export function SaleDetailPage() {
   const isFullPayment = financials?.isFullyPaid ?? false;
   const isLossSale = financials?.isLossSale ?? false;
   const totalCost = vehicle?.total_cost ?? 0;
+  const purchasePrice = vehicle?.purchase_price ?? 0;
   const remainingLabel = isLossSale ? 'Remaining to break even' : 'Remaining balance';
 
   const handleSaveSale = async (values: Record<string, string>) => {
@@ -246,7 +248,9 @@ export function SaleDetailPage() {
               <InfoItem label="Sale date" value={formatDate(sale.sale_date)} />
               <InfoItem label="Salesperson" value={sale.salesperson} />
               {vehicle && (
-                <InfoItem label="Total cost (incl. expenses)" value={formatPKR(totalCost)} />
+                <div className="sm:col-span-2">
+                  <VehicleCostBreakdown totalCost={totalCost} purchasePrice={purchasePrice} />
+                </div>
               )}
               <InfoItem label="Selling price" value={formatPKR(sellingPrice)} highlight="success" />
               <InfoItem
@@ -317,8 +321,13 @@ export function SaleDetailPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {vehicle && (
-              <SummaryRow label="Total cost (incl. expenses)" value={formatPKR(totalCost)} />
+              <VehicleCostBreakdown
+                totalCost={totalCost}
+                purchasePrice={purchasePrice}
+                compact
+              />
             )}
+            {vehicle && <div className="border-t border-[var(--border-secondary)] pt-3" />}
             <SummaryRow label="Selling price" value={formatPKR(sellingPrice)} highlight="success" />
             <SummaryRow
               label="Payment received"
