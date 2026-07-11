@@ -12,12 +12,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
+import type { ShowroomExpense } from '@/types';
 import { formatDate, formatPKR, parseMoneyInput } from '@/utils/format';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
 
+type ExpenseTab = 'vehicle' | 'showroom_rent_salaries' | 'ppf_rent_salaries' | 'showroom_other';
+
 const VEHICLE_CATEGORY_IDS = new Set(['cat_001', 'cat_002', 'cat_003']);
-const SHOWROOM_CATEGORY_IDS = new Set(['cat_004', 'cat_005', 'cat_006']);
+const SHOWROOM_RENT_SALARY_CATEGORY_IDS = new Set(['cat_006', 'cat_007']);
+const PPF_RENT_SALARY_CATEGORY_IDS = new Set(['cat_008', 'cat_009']);
+const SHOWROOM_OTHER_CATEGORY_IDS = new Set(['cat_004', 'cat_005']);
+
+const TAB_CATEGORY_IDS: Record<Exclude<ExpenseTab, 'vehicle'>, Set<string>> = {
+  showroom_rent_salaries: SHOWROOM_RENT_SALARY_CATEGORY_IDS,
+  ppf_rent_salaries: PPF_RENT_SALARY_CATEGORY_IDS,
+  showroom_other: SHOWROOM_OTHER_CATEGORY_IDS,
+};
 
 const EMPTY_EXPENSE_FORM = {
   vehicle_id: '',
@@ -38,7 +49,7 @@ function getCurrentMonthExpenses<T extends { expense_date: string; amount: numbe
 }
 
 function groupByCategory(
-  expenses: ReturnType<typeof store.getVehicleExpenses>,
+  expenses: { category_id: string; amount: number }[],
   categories: ReturnType<typeof store.getExpenseCategories>,
 ) {
   const map = new Map<string, { name: string; total: number; count: number }>();
@@ -55,12 +66,43 @@ function groupByCategory(
   return [...map.values()].sort((a, b) => b.total - a.total);
 }
 
+function filterShowroomExpenses(expenses: ShowroomExpense[], tab: Exclude<ExpenseTab, 'vehicle'>) {
+  const allowed = TAB_CATEGORY_IDS[tab];
+  return expenses.filter((exp) => allowed.has(exp.category_id));
+}
+
+function tabLabel(tab: ExpenseTab): string {
+  switch (tab) {
+    case 'vehicle':
+      return 'Vehicle Expenses';
+    case 'showroom_rent_salaries':
+      return 'Showroom Rent & Salaries';
+    case 'ppf_rent_salaries':
+      return 'PPF Studio Rent & Salaries';
+    case 'showroom_other':
+      return 'Other Showroom';
+  }
+}
+
+function addButtonLabel(tab: ExpenseTab): string {
+  switch (tab) {
+    case 'vehicle':
+      return 'Add vehicle expense';
+    case 'showroom_rent_salaries':
+      return 'Add showroom rent / salary';
+    case 'ppf_rent_salaries':
+      return 'Add PPF rent / salary';
+    case 'showroom_other':
+      return 'Add showroom expense';
+  }
+}
+
 export function ExpensesPage() {
   const loading = usePageLoading();
   const { user } = useAuth();
   const { success, error } = useToast();
   const [refreshKey, setRefreshKey] = useState(0);
-  const [activeTab, setActiveTab] = useState<'vehicle' | 'showroom'>('vehicle');
+  const [activeTab, setActiveTab] = useState<ExpenseTab>('showroom_rent_salaries');
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY_EXPENSE_FORM);
@@ -72,8 +114,23 @@ export function ExpensesPage() {
   const categories = store.getExpenseCategories();
   const vehicles = store.getVehicles();
 
+  const showroomRentSalaryExpenses = useMemo(
+    () => filterShowroomExpenses(showroomExpenses, 'showroom_rent_salaries'),
+    [showroomExpenses],
+  );
+  const ppfRentSalaryExpenses = useMemo(
+    () => filterShowroomExpenses(showroomExpenses, 'ppf_rent_salaries'),
+    [showroomExpenses],
+  );
+  const showroomOtherExpenses = useMemo(
+    () => filterShowroomExpenses(showroomExpenses, 'showroom_other'),
+    [showroomExpenses],
+  );
+
   const monthlyVehicle = getCurrentMonthExpenses(vehicleExpenses);
-  const monthlyShowroom = getCurrentMonthExpenses(showroomExpenses);
+  const monthlyShowroomRentSalary = getCurrentMonthExpenses(showroomRentSalaryExpenses);
+  const monthlyPpfRentSalary = getCurrentMonthExpenses(ppfRentSalaryExpenses);
+  const monthlyShowroomOther = getCurrentMonthExpenses(showroomOtherExpenses);
 
   const vehicleCategoryOptions = useMemo(
     () =>
@@ -83,13 +140,13 @@ export function ExpensesPage() {
     [categories],
   );
 
-  const showroomCategoryOptions = useMemo(
-    () =>
-      categories
-        .filter((c) => SHOWROOM_CATEGORY_IDS.has(c.category_id))
-        .map((c) => ({ value: c.category_id, label: c.category_name })),
-    [categories],
-  );
+  const categoryOptionsForTab = useMemo(() => {
+    if (activeTab === 'vehicle') return vehicleCategoryOptions;
+    const allowed = TAB_CATEGORY_IDS[activeTab as Exclude<ExpenseTab, 'vehicle'>];
+    return categories
+      .filter((c) => allowed.has(c.category_id))
+      .map((c) => ({ value: c.category_id, label: c.category_name }));
+  }, [activeTab, categories, vehicleCategoryOptions]);
 
   const vehicleOptions = useMemo(
     () =>
@@ -107,34 +164,18 @@ export function ExpensesPage() {
     [vehicleExpenses, categories],
   );
 
-  const showroomByCategory = useMemo(() => {
-    const map = new Map<string, { name: string; total: number; count: number }>();
-    for (const exp of showroomExpenses) {
-      const cat = categories.find((c) => c.category_id === exp.category_id);
-      const name = cat?.category_name ?? 'Uncategorized';
-      const existing = map.get(exp.category_id) ?? { name, total: 0, count: 0 };
-      existing.total += exp.amount;
-      existing.count += 1;
-      map.set(exp.category_id, existing);
-    }
-    return [...map.values()].sort((a, b) => b.total - a.total);
-  }, [showroomExpenses, categories]);
-
-  const sortedVehicleExpenses = [...vehicleExpenses].sort(
-    (a, b) => new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime(),
-  );
-  const sortedShowroomExpenses = [...showroomExpenses].sort(
-    (a, b) => new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime(),
-  );
-
-  const openAddModal = (tab: 'vehicle' | 'showroom') => {
+  const openAddModal = (tab: ExpenseTab) => {
     setActiveTab(tab);
+    const options =
+      tab === 'vehicle'
+        ? vehicleCategoryOptions
+        : categories
+            .filter((c) => TAB_CATEGORY_IDS[tab as Exclude<ExpenseTab, 'vehicle'>].has(c.category_id))
+            .map((c) => ({ value: c.category_id, label: c.category_name }));
+
     setForm({
       ...EMPTY_EXPENSE_FORM,
-      category_id:
-        tab === 'vehicle'
-          ? (vehicleCategoryOptions[0]?.value ?? '')
-          : (showroomCategoryOptions[0]?.value ?? ''),
+      category_id: options[0]?.value ?? '',
       vehicle_id: vehicleOptions[0]?.value ?? '',
     });
     setAddOpen(true);
@@ -188,7 +229,7 @@ export function ExpensesPage() {
           record_id: created.expense_id,
           ip_address: '127.0.0.1',
         });
-        success('Expense added', 'Showroom expense recorded.');
+        success('Expense added', `${tabLabel(activeTab)} expense recorded.`);
       }
       setAddOpen(false);
       setForm(EMPTY_EXPENSE_FORM);
@@ -209,59 +250,71 @@ export function ExpensesPage() {
     );
   }
 
-  const categoryOptions = activeTab === 'vehicle' ? vehicleCategoryOptions : showroomCategoryOptions;
+  const modalDescription =
+    activeTab === 'vehicle'
+      ? 'Recorded on the vehicle and added to its total cost.'
+      : activeTab === 'showroom_rent_salaries'
+        ? 'Showroom premises rent or staff salaries.'
+        : activeTab === 'ppf_rent_salaries'
+          ? 'PPF studio premises rent or installer salaries.'
+          : 'Other general showroom operating expenses.';
 
   return (
     <PageTransition>
       <PageHeader
         title="Expenses"
-        subtitle="Track vehicle and showroom operating costs"
-        actions={
-          <Button onClick={() => openAddModal(activeTab)}>
-            Add {activeTab === 'vehicle' ? 'vehicle' : 'showroom'} expense
-          </Button>
-        }
+        subtitle="Vehicle costs, showroom rent & salaries, and PPF studio rent & salaries"
+        actions={<Button onClick={() => openAddModal(activeTab)}>{addButtonLabel(activeTab)}</Button>}
       />
 
-      <Tabs defaultValue="vehicle" value={activeTab} onValueChange={(v) => setActiveTab(v as 'vehicle' | 'showroom')}>
-        <TabsList className="mb-6 w-full sm:w-auto">
+      <Tabs
+        defaultValue="showroom_rent_salaries"
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as ExpenseTab)}
+      >
+        <TabsList className="mb-6 w-full flex-wrap">
+          <TabsTrigger value="showroom_rent_salaries">Showroom Rent & Salaries</TabsTrigger>
+          <TabsTrigger value="ppf_rent_salaries">PPF Studio Rent & Salaries</TabsTrigger>
           <TabsTrigger value="vehicle">Vehicle Expenses</TabsTrigger>
-          <TabsTrigger value="showroom">Showroom Expenses</TabsTrigger>
+          <TabsTrigger value="showroom_other">Other Showroom</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="showroom_rent_salaries">
+          <ShowroomExpensePanel
+            title="Showroom Rent & Salaries"
+            expenses={showroomRentSalaryExpenses}
+            categories={categories}
+            monthlyTotal={monthlyShowroomRentSalary}
+          />
+        </TabsContent>
+
+        <TabsContent value="ppf_rent_salaries">
+          <ShowroomExpensePanel
+            title="PPF Studio Rent & Salaries"
+            expenses={ppfRentSalaryExpenses}
+            categories={categories}
+            monthlyTotal={monthlyPpfRentSalary}
+          />
+        </TabsContent>
 
         <TabsContent value="vehicle">
           <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <SummaryCard label="This month" value={formatPKR(monthlyVehicle)} />
-            <SummaryCard label="Total vehicle expenses" value={formatPKR(vehicleExpenses.reduce((s, e) => s + e.amount, 0))} />
+            <SummaryCard
+              label="Total vehicle expenses"
+              value={formatPKR(vehicleExpenses.reduce((s, e) => s + e.amount, 0))}
+            />
             <SummaryCard label="Categories" value={String(vehicleByCategory.length)} />
           </div>
 
           {vehicleByCategory.length > 0 && (
-            <Card padding="md" className="mb-6">
-              <CardHeader>
-                <CardTitle>By Category</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {vehicleByCategory.map((cat) => (
-                    <div
-                      key={cat.name}
-                      className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-tertiary)] px-4 py-3"
-                    >
-                      <p className="text-sm font-medium text-[var(--text-primary)]">{cat.name}</p>
-                      <p className="mt-1 text-lg font-bold text-accent">{formatPKR(cat.total)}</p>
-                      <p className="text-xs text-[var(--text-tertiary)]">{cat.count} entries</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <CategoryBreakdown title="By Category" items={vehicleByCategory} />
           )}
 
           <ExpenseTable
             title="All Vehicle Expenses"
             showVehicleColumn
-            rows={sortedVehicleExpenses.map((exp) => {
+            rows={sortedExpenses(vehicleExpenses).map((exp) => {
               const vehicle = vehicles.find((v) => v.vehicle_id === exp.vehicle_id);
               const cat = categories.find((c) => c.category_id === exp.category_id);
               return {
@@ -280,49 +333,12 @@ export function ExpensesPage() {
           />
         </TabsContent>
 
-        <TabsContent value="showroom">
-          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <SummaryCard label="This month" value={formatPKR(monthlyShowroom)} />
-            <SummaryCard label="Total showroom expenses" value={formatPKR(showroomExpenses.reduce((s, e) => s + e.amount, 0))} />
-            <SummaryCard label="Categories" value={String(showroomByCategory.length)} />
-          </div>
-
-          {showroomByCategory.length > 0 && (
-            <Card padding="md" className="mb-6">
-              <CardHeader>
-                <CardTitle>By Category</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {showroomByCategory.map((cat) => (
-                    <div
-                      key={cat.name}
-                      className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-tertiary)] px-4 py-3"
-                    >
-                      <p className="text-sm font-medium text-[var(--text-primary)]">{cat.name}</p>
-                      <p className="mt-1 text-lg font-bold text-accent">{formatPKR(cat.total)}</p>
-                      <p className="text-xs text-[var(--text-tertiary)]">{cat.count} entries</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <ExpenseTable
-            title="All Showroom Expenses"
-            showVehicleColumn={false}
-            rows={sortedShowroomExpenses.map((exp) => {
-              const cat = categories.find((c) => c.category_id === exp.category_id);
-              return {
-                id: exp.expense_id,
-                date: exp.expense_date,
-                description: exp.description,
-                category: cat?.category_name ?? '—',
-                extra: null,
-                amount: exp.amount,
-              };
-            })}
+        <TabsContent value="showroom_other">
+          <ShowroomExpensePanel
+            title="Other Showroom Expenses"
+            expenses={showroomOtherExpenses}
+            categories={categories}
+            monthlyTotal={monthlyShowroomOther}
           />
         </TabsContent>
       </Tabs>
@@ -330,12 +346,8 @@ export function ExpensesPage() {
       <Modal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        title={activeTab === 'vehicle' ? 'Add vehicle expense' : 'Add showroom expense'}
-        description={
-          activeTab === 'vehicle'
-            ? 'Recorded on the vehicle and added to its total cost.'
-            : 'General showroom operating expense.'
-        }
+        title={addButtonLabel(activeTab)}
+        description={modalDescription}
         size="lg"
         footer={
           <>
@@ -366,7 +378,7 @@ export function ExpensesPage() {
             required
             value={form.category_id}
             onChange={(e) => setForm((prev) => ({ ...prev, category_id: e.target.value }))}
-            options={categoryOptions}
+            options={categoryOptionsForTab}
           />
           <Input
             label="Date"
@@ -391,12 +403,94 @@ export function ExpensesPage() {
               rows={2}
               value={form.description}
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="What was this expense for?"
+              placeholder={
+                activeTab === 'showroom_rent_salaries' || activeTab === 'ppf_rent_salaries'
+                  ? 'e.g. November rent or staff salaries'
+                  : 'What was this expense for?'
+              }
             />
           </div>
         </form>
       </Modal>
     </PageTransition>
+  );
+}
+
+function sortedExpenses<T extends { expense_date: string }>(items: T[]): T[] {
+  return [...items].sort(
+    (a, b) => new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime(),
+  );
+}
+
+function ShowroomExpensePanel({
+  title,
+  expenses,
+  categories,
+  monthlyTotal,
+}: {
+  title: string;
+  expenses: ShowroomExpense[];
+  categories: ReturnType<typeof store.getExpenseCategories>;
+  monthlyTotal: number;
+}) {
+  const byCategory = useMemo(() => groupByCategory(expenses, categories), [expenses, categories]);
+
+  return (
+    <>
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <SummaryCard label="This month" value={formatPKR(monthlyTotal)} />
+        <SummaryCard label="Total" value={formatPKR(expenses.reduce((s, e) => s + e.amount, 0))} />
+        <SummaryCard label="Entries" value={String(expenses.length)} />
+      </div>
+
+      {byCategory.length > 0 && <CategoryBreakdown title="By Category" items={byCategory} />}
+
+      <ExpenseTable
+        title={title}
+        showVehicleColumn={false}
+        rows={sortedExpenses(expenses).map((exp) => {
+          const cat = categories.find((c) => c.category_id === exp.category_id);
+          return {
+            id: exp.expense_id,
+            date: exp.expense_date,
+            description: exp.description,
+            category: cat?.category_name ?? '—',
+            extra: null,
+            amount: exp.amount,
+          };
+        })}
+      />
+    </>
+  );
+}
+
+function CategoryBreakdown({
+  title,
+  items,
+}: {
+  title: string;
+  items: { name: string; total: number; count: number }[];
+}) {
+  return (
+    <Card padding="md" className="mb-6">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((cat) => (
+            <div
+              key={cat.name}
+              className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-tertiary)] px-4 py-3"
+            >
+              <p className="text-sm font-medium text-[var(--text-primary)]">{cat.name}</p>
+              <p className="mt-1 text-lg font-bold text-accent">{formatPKR(cat.total)}</p>
+              <p className="text-xs text-[var(--text-tertiary)]">{cat.count} entries</p>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

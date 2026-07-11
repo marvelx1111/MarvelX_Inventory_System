@@ -602,7 +602,10 @@ export function createSeedData(): AppData {
       { category_id: 'cat_003', category_name: 'Documentation', description: 'Transfer and registration fees' },
       { category_id: 'cat_004', category_name: 'Marketing', description: 'Showroom marketing expenses' },
       { category_id: 'cat_005', category_name: 'Utilities', description: 'Electricity, water, internet' },
-      { category_id: 'cat_006', category_name: 'Salaries', description: 'Staff salaries and benefits' },
+      { category_id: 'cat_006', category_name: 'Showroom Salaries', description: 'Showroom staff salaries and benefits' },
+      { category_id: 'cat_007', category_name: 'Showroom Rent', description: 'Showroom premises rent and lease' },
+      { category_id: 'cat_008', category_name: 'PPF Studio Rent', description: 'PPF studio premises rent and lease' },
+      { category_id: 'cat_009', category_name: 'PPF Studio Salaries', description: 'PPF studio staff salaries and benefits' },
     ],
 
     vehicleExpenses: [
@@ -675,8 +678,29 @@ export function createSeedData(): AppData {
         expense_id: 'sex_003',
         category_id: 'cat_006',
         expense_date: '2024-11-30',
-        description: 'November staff salaries',
+        description: 'November showroom staff salaries',
         amount: 650000,
+      },
+      {
+        expense_id: 'sex_006',
+        category_id: 'cat_007',
+        expense_date: '2024-11-01',
+        description: 'November showroom rent',
+        amount: 180000,
+      },
+      {
+        expense_id: 'sex_007',
+        category_id: 'cat_008',
+        expense_date: '2024-11-01',
+        description: 'November PPF studio rent',
+        amount: 95000,
+      },
+      {
+        expense_id: 'sex_008',
+        category_id: 'cat_009',
+        expense_date: '2024-11-30',
+        description: 'November PPF installer salaries',
+        amount: 220000,
       },
       {
         expense_id: 'sex_004',
