@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { EditableCard } from '@/components/ui/EditableCard';
 import { EditRecordModal } from '@/components/ui/EditRecordModal';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -197,14 +197,12 @@ export function PPFJobDetailPage() {
     details;
   const statusConfig = PPF_STATUS_CONFIG[job.status];
   const nextStatuses = STATUS_FLOW[job.status];
-  const totalMetersUsed = materials.reduce((sum, m) => sum + m.meters_used, 0);
   const totalMaterialCost = materials.reduce((sum, m) => sum + m.material_cost, 0);
   const totalLaborCost = labor
     ? labor.application_cost + labor.polishing_cost + labor.washing_cost + labor.misc_cost
     : 0;
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
   const balanceDue = sale ? Math.max(0, sale.final_price - totalPaid) : 0;
-  const remainingBeforeJob = roll ? roll.remaining_length + totalMetersUsed : null;
 
   return (
     <motion.div
@@ -326,76 +324,21 @@ export function PPFJobDetailPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Roll Assignment</CardTitle>
-            <CardDescription>Film roll and remaining stock</CardDescription>
+            <CardTitle>Roll used on this job</CardTitle>
+            <CardDescription>One full roll dedicated to this vehicle</CardDescription>
           </CardHeader>
           <CardContent>
             {roll ? (
               <dl className="space-y-3">
-                <DetailRow
-                  label="Roll"
-                  value={
-                    <Link to="/ppf/rolls" className="text-accent hover:underline">
-                      {roll.roll_id}
-                    </Link>
-                  }
-                />
+                <DetailRow label="Roll ID" value={roll.roll_id} />
                 <DetailRow label="Brand" value={brand?.brand_name ?? '—'} />
                 <DetailRow label="Film type" value={roll.film_type} />
-                <DetailRow label="Width" value={`${roll.width} m`} />
-                <DetailRow
-                  label="Used on this job"
-                  value={
-                    totalMetersUsed > 0 ? (
-                      <span className="font-semibold text-amber-700 dark:text-amber-400">
-                        {totalMetersUsed} m
-                      </span>
-                    ) : (
-                      'Not recorded yet'
-                    )
-                  }
-                />
-                {remainingBeforeJob !== null && totalMetersUsed > 0 && (
-                  <DetailRow
-                    label="Before job"
-                    value={`${remainingBeforeJob.toFixed(1)} m remaining`}
-                  />
-                )}
-                <DetailRow
-                  label="Current remaining"
-                  value={
-                    <span
-                      className={cn(
-                        'font-semibold',
-                        roll.remaining_length < 20
-                          ? 'text-red-600 dark:text-red-400'
-                          : 'text-emerald-700 dark:text-emerald-400',
-                      )}
-                    >
-                      {roll.remaining_length} m
-                    </span>
-                  }
-                />
-                <div className="pt-2">
-                  <div className="mb-1 flex justify-between text-xs text-[var(--text-tertiary)]">
-                    <span>Stock level</span>
-                    <span>
-                      {roll.remaining_length} / {roll.total_length} m
-                    </span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-tertiary)]">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{
-                        width: `${Math.min(100, (roll.remaining_length / roll.total_length) * 100)}%`,
-                      }}
-                      transition={{ duration: 0.6, ease: 'easeOut' }}
-                      className={cn(
-                        'h-full rounded-full',
-                        roll.remaining_length < 20 ? 'bg-red-500' : 'bg-emerald-500',
-                      )}
-                    />
-                  </div>
+                <DetailRow label="Purchase cost" value={formatPKR(roll.purchase_cost)} />
+                <DetailRow label="Supplier" value={roll.supplier || '—'} />
+                <div className="rounded-lg border border-blue-200/60 bg-blue-50/60 px-3 py-2 text-xs dark:border-blue-900/40 dark:bg-blue-950/20">
+                  <p className="font-medium text-blue-800 dark:text-blue-300">
+                    This roll left inventory when the job was booked
+                  </p>
                 </div>
               </dl>
             ) : (

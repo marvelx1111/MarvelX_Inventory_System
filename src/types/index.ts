@@ -399,9 +399,15 @@ export type CreatePPFCustomerInput = Omit<PPFCustomer, 'ppf_customer_id'>;
 
 export type CreatePPFVehicleInput = Omit<PPFVehicle, 'ppf_vehicle_id'>;
 
-export type CreatePPFRollInput = Omit<PPFRoll, 'roll_id' | 'remaining_length'> & {
-  remaining_length?: number;
+export type CreatePPFRollInput = {
+  brand_name: string;
+  film_type: string;
+  purchase_cost: number;
+  supplier: string;
+  purchase_date: string;
 };
+
+export type UpdatePPFRollInput = Partial<CreatePPFRollInput>;
 
 export const PERMISSION_MODULES = [
   'dashboard',

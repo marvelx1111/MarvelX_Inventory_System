@@ -53,12 +53,12 @@ const KPI_CONFIG = [
     accent: 'text-blue-600 dark:text-blue-400',
   },
   {
-    key: 'ppfLowStockRolls',
-    label: 'Low PPF Roll Alerts',
+    key: 'ppfRollsInStock',
+    label: 'PPF Rolls In Stock',
     format: (v: number) => String(v),
     suffix: '',
-    link: '/ppf',
-    accent: 'text-red-600 dark:text-red-400',
+    link: '/ppf/rolls',
+    accent: 'text-emerald-600 dark:text-emerald-400',
   },
 ] as const;
 
@@ -89,7 +89,7 @@ export function DashboardPage() {
     monthlyProfit: monthly.monthlyProfit,
     pendingReceivables: kpis.pendingReceivables,
     ppfJobsActive: kpis.ppfJobsActive,
-    ppfLowStockRolls: kpis.ppfLowStockRolls,
+    ppfRollsInStock: kpis.ppfRollsInStock,
   };
 
   if (loading) {
@@ -134,9 +134,9 @@ export function DashboardPage() {
                     }
                   />
                 </p>
-                {kpi.key === 'ppfLowStockRolls' && kpiValues[kpi.key] > 0 && (
-                  <Badge variant="danger" dot pulse className="mt-3">
-                    Action needed
+                {kpi.key === 'ppfRollsInStock' && kpiValues[kpi.key] === 0 && (
+                  <Badge variant="danger" dot className="mt-3">
+                    No rolls in stock
                   </Badge>
                 )}
               </Card>

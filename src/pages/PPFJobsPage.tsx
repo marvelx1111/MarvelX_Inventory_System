@@ -97,10 +97,9 @@ function NewJobModal({
     const brands = store.getPPFBrands();
     return store.getAvailablePPFRolls().map((roll) => {
       const brand = brands.find((b) => b.brand_id === roll.brand_id);
-      const meters = Math.round(roll.remaining_length);
       return {
         value: roll.roll_id,
-        label: `${brand?.brand_name ?? 'Roll'} · ${roll.film_type} (${meters}m · in stock)`,
+        label: `${brand?.brand_name ?? 'Roll'} · ${roll.film_type} (${roll.roll_id})`,
       };
     });
   }, [open]);
@@ -301,7 +300,7 @@ function NewJobModal({
               placeholder={rollOptions.length > 0 ? 'Select in-stock roll' : 'No rolls in stock'}
               value={form.roll_id}
               onChange={(e) => update('roll_id', e.target.value)}
-              hint="One roll is dedicated to one vehicle job"
+              hint="One roll is used for one vehicle — it leaves inventory when the job is saved"
             />
             <Input
               label="Installer"
