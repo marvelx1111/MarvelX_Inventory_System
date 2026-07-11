@@ -8,6 +8,11 @@ import {
   type PersistResult,
 } from '@/data/supabase-sync';
 import { computeSaleFinancials, normalizeSaleInput } from '@/utils/sale';
+import {
+  getAvailablePPFRolls,
+  getPPFJobForRoll,
+  isPPFRollAvailable,
+} from '@/utils/ppf-inventory';
 import { roundPKR } from '@/utils/format';
 
 function ensurePersisted(result: PersistResult): void {
@@ -19,6 +24,7 @@ import type {
   CreateCustomerInput,
   CreatePPFCustomerInput,
   CreatePPFJobInput,
+  CreatePPFRollInput,
   CreatePPFVehicleInput,
   CreatePurchaseInput,
   CreateSaleInput,
@@ -213,6 +219,7 @@ class DataStore {
     this.data.ppfCustomers.forEach((c) => track('ppfc', c.ppf_customer_id));
     this.data.ppfVehicles.forEach((v) => track('ppfv', v.ppf_vehicle_id));
     this.data.ppfJobCards.forEach((j) => track('job', j.job_id));
+    this.data.ppfRolls.forEach((r) => track('roll', r.roll_id));
     this.data.ppfStockTransactions.forEach((t) => track('ppftx', t.transaction_id));
     this.data.auditLogs.forEach((l) => track('aud', l.log_id));
 
@@ -434,6 +441,18 @@ class DataStore {
 
   getPPFRolls(): PPFRoll[] {
     return this.data.ppfRolls;
+  }
+
+  getPPFJobForRoll(rollId: string): PPFJobCard | null {
+    return getPPFJobForRoll(rollId, this.data.ppfJobCards);
+  }
+
+  isPPFRollAvailable(rollId: string): boolean {
+    return isPPFRollAvailable(rollId, this.data.ppfJobCards);
+  }
+
+  getAvailablePPFRolls(): PPFRoll[] {
+    return getAvailablePPFRolls(this.data.ppfRolls, this.data.ppfJobCards);
   }
 
   getPPFStockTransactions(): PPFStockTransaction[] {
@@ -921,7 +940,9 @@ class DataStore {
     return vehicle;
   }
 
-  async createPPFJob(input: CreatePPFJobInput): Promise<PPFJobCard> {
+  async createPPFJob(input: CreatePPFJobInput): Promise<PPFJobCard | null> {
+    if (!this.isPPFRollAvailable(input.roll_id)) return null;
+
     const job: PPFJobCard = {
       job_id: this.nextId('job'),
       ppf_customer_id: input.ppf_customer_id,
@@ -943,6 +964,53 @@ class DataStore {
     this.revision += 1;
     this.notify();
     return job;
+  }
+
+  async createPPFRoll(input: CreatePPFRollInput): Promise<PPFRoll> {
+    const totalLength = Math.round(Number(input.total_length) * 10) / 10;
+    const remainingLength =
+      input.remaining_length !== undefined
+        ? Math.round(Number(input.remaining_length) * 10) / 10
+        : totalLength;
+
+    const roll: PPFRoll = {
+      roll_id: this.nextId('roll'),
+      brand_id: input.brand_id,
+      film_type: input.film_type.trim(),
+      width: Math.round(Number(input.width) * 100) / 100,
+      total_length: totalLength,
+      remaining_length: Math.min(remainingLength, totalLength),
+      purchase_cost: roundPKR(input.purchase_cost),
+      supplier: input.supplier.trim(),
+      purchase_date: input.purchase_date,
+    };
+
+    const transaction: PPFStockTransaction = {
+      transaction_id: this.nextId('ppftx'),
+      roll_id: roll.roll_id,
+      transaction_type: 'purchase',
+      length_change: roll.total_length,
+      transaction_date: roll.purchase_date,
+      reference: roll.roll_id,
+      notes: `Stock in: ${roll.film_type}`,
+    };
+
+    this.data.ppfRolls.push(roll);
+    this.data.ppfStockTransactions.unshift(transaction);
+
+    ensurePersisted(
+      await persistRowInsert('ppf_rolls', roll as unknown as Record<string, unknown>),
+    );
+    ensurePersisted(
+      await persistRowInsert(
+        'ppf_stock_transactions',
+        transaction as unknown as Record<string, unknown>,
+      ),
+    );
+
+    this.revision += 1;
+    this.notify();
+    return roll;
   }
 
   usePPFRoll(

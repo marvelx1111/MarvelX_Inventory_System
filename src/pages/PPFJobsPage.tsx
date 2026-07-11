@@ -1,6 +1,7 @@
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { PPFStudioNav } from '@/components/ppf/PPFStudioNav';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -94,12 +95,12 @@ function NewJobModal({
 
   const rollOptions = useMemo(() => {
     const brands = store.getPPFBrands();
-    return store.getPPFRolls().map((roll) => {
+    return store.getAvailablePPFRolls().map((roll) => {
       const brand = brands.find((b) => b.brand_id === roll.brand_id);
       const meters = Math.round(roll.remaining_length);
       return {
         value: roll.roll_id,
-        label: `${brand?.brand_name ?? 'Roll'} · ${roll.film_type} (${meters}m left)`,
+        label: `${brand?.brand_name ?? 'Roll'} · ${roll.film_type} (${meters}m · in stock)`,
       };
     });
   }, [open]);
@@ -148,7 +149,7 @@ function NewJobModal({
         color: form.color,
       });
 
-      await store.createPPFJob({
+      const job = await store.createPPFJob({
         ppf_customer_id: customer.ppf_customer_id,
         ppf_vehicle_id: vehicle.ppf_vehicle_id,
         package_id: form.package_id,
@@ -159,6 +160,11 @@ function NewJobModal({
         status: form.status,
         notes: form.notes,
       });
+
+      if (!job) {
+        setError('That roll is already assigned to another vehicle. Pick an in-stock roll.');
+        return;
+      }
 
       onCreated();
       onClose();
@@ -292,9 +298,10 @@ function NewJobModal({
             <Select
               label="Roll / film"
               options={rollOptions}
-              placeholder="Select roll"
+              placeholder={rollOptions.length > 0 ? 'Select in-stock roll' : 'No rolls in stock'}
               value={form.roll_id}
               onChange={(e) => update('roll_id', e.target.value)}
+              hint="One roll is dedicated to one vehicle job"
             />
             <Input
               label="Installer"
@@ -540,6 +547,7 @@ export function PPFJobsPage() {
             </div>
           }
         />
+        <PPFStudioNav />
         <Card padding="none">
           <EmptyState
             title="No PPF jobs yet"
@@ -570,6 +578,8 @@ export function PPFJobsPage() {
           </div>
         }
       />
+
+      <PPFStudioNav />
 
       {/* Mobile: tabbed kanban */}
       <div className="lg:hidden">

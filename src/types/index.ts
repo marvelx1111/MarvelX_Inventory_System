@@ -399,6 +399,10 @@ export type CreatePPFCustomerInput = Omit<PPFCustomer, 'ppf_customer_id'>;
 
 export type CreatePPFVehicleInput = Omit<PPFVehicle, 'ppf_vehicle_id'>;
 
+export type CreatePPFRollInput = Omit<PPFRoll, 'roll_id' | 'remaining_length'> & {
+  remaining_length?: number;
+};
+
 export const PERMISSION_MODULES = [
   'dashboard',
   'inventory',
