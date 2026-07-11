@@ -7,6 +7,7 @@ import {
   persistRowUpdate,
   type PersistResult,
 } from '@/data/supabase-sync';
+import { DEFAULT_EXPENSE_CATEGORIES } from '@/utils/expense-categories';
 import { computeSaleFinancials, normalizeSaleInput } from '@/utils/sale';
 import {
   getAvailablePPFRolls,
@@ -176,8 +177,17 @@ class DataStore {
 
   hydrate(data: AppData): void {
     const vehiclesById = new Map(data.vehicles.map((v) => [v.vehicle_id, v]));
+    const categoryIds = new Set(data.expenseCategories.map((c) => c.category_id));
+    const expenseCategories = [...data.expenseCategories];
+    for (const def of DEFAULT_EXPENSE_CATEGORIES) {
+      if (!categoryIds.has(def.category_id)) {
+        expenseCategories.push({ ...def });
+      }
+    }
+
     this.data = {
       ...data,
+      expenseCategories,
       sales: data.sales.map((sale) => {
         const vehicle = vehiclesById.get(sale.vehicle_id);
         const financials = computeSaleFinancials(sale, vehicle?.total_cost ?? 0);

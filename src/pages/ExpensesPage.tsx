@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -19,10 +19,13 @@ import { usePageLoading } from './hooks/usePageLoading';
 
 type ExpenseTab = 'vehicle' | 'showroom_rent_salaries' | 'ppf_rent_salaries' | 'showroom_other';
 
-const VEHICLE_CATEGORY_IDS = new Set(['cat_001', 'cat_002', 'cat_003']);
-const SHOWROOM_RENT_SALARY_CATEGORY_IDS = new Set(['cat_006', 'cat_007']);
-const PPF_RENT_SALARY_CATEGORY_IDS = new Set(['cat_008', 'cat_009']);
-const SHOWROOM_OTHER_CATEGORY_IDS = new Set(['cat_004', 'cat_005']);
+import {
+  categoryOptionsForIds,
+  PPF_RENT_SALARY_CATEGORY_IDS,
+  SHOWROOM_OTHER_CATEGORY_IDS,
+  SHOWROOM_RENT_SALARY_CATEGORY_IDS,
+  VEHICLE_CATEGORY_IDS,
+} from '@/utils/expense-categories';
 
 const TAB_CATEGORY_IDS: Record<Exclude<ExpenseTab, 'vehicle'>, Set<string>> = {
   showroom_rent_salaries: SHOWROOM_RENT_SALARY_CATEGORY_IDS,
@@ -99,7 +102,7 @@ function addButtonLabel(tab: ExpenseTab): string {
 
 export function ExpensesPage() {
   const loading = usePageLoading();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { success, error } = useToast();
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState<ExpenseTab>('showroom_rent_salaries');
@@ -108,6 +111,10 @@ export function ExpensesPage() {
   const [form, setForm] = useState(EMPTY_EXPENSE_FORM);
 
   void refreshKey;
+
+  useEffect(() => {
+    return store.subscribe(() => setRefreshKey((k) => k + 1));
+  }, []);
 
   const vehicleExpenses = store.getVehicleExpenses();
   const showroomExpenses = store.getShowroomExpenses();
@@ -133,20 +140,15 @@ export function ExpensesPage() {
   const monthlyShowroomOther = getCurrentMonthExpenses(showroomOtherExpenses);
 
   const vehicleCategoryOptions = useMemo(
-    () =>
-      categories
-        .filter((c) => VEHICLE_CATEGORY_IDS.has(c.category_id))
-        .map((c) => ({ value: c.category_id, label: c.category_name })),
-    [categories],
+    () => categoryOptionsForIds(categories, VEHICLE_CATEGORY_IDS),
+    [categories, refreshKey],
   );
 
   const categoryOptionsForTab = useMemo(() => {
     if (activeTab === 'vehicle') return vehicleCategoryOptions;
     const allowed = TAB_CATEGORY_IDS[activeTab as Exclude<ExpenseTab, 'vehicle'>];
-    return categories
-      .filter((c) => allowed.has(c.category_id))
-      .map((c) => ({ value: c.category_id, label: c.category_name }));
-  }, [activeTab, categories, vehicleCategoryOptions]);
+    return categoryOptionsForIds(categories, allowed);
+  }, [activeTab, categories, vehicleCategoryOptions, refreshKey]);
 
   const vehicleOptions = useMemo(
     () =>
@@ -168,10 +170,8 @@ export function ExpensesPage() {
     setActiveTab(tab);
     const options =
       tab === 'vehicle'
-        ? vehicleCategoryOptions
-        : categories
-            .filter((c) => TAB_CATEGORY_IDS[tab as Exclude<ExpenseTab, 'vehicle'>].has(c.category_id))
-            .map((c) => ({ value: c.category_id, label: c.category_name }));
+        ? categoryOptionsForIds(categories, VEHICLE_CATEGORY_IDS)
+        : categoryOptionsForIds(categories, TAB_CATEGORY_IDS[tab as Exclude<ExpenseTab, 'vehicle'>]);
 
     setForm({
       ...EMPTY_EXPENSE_FORM,
@@ -183,6 +183,10 @@ export function ExpensesPage() {
 
   const handleSubmitExpense = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) {
+      error('Not allowed', 'Only administrators can add expenses.');
+      return;
+    }
     const amount = parseMoneyInput(form.amount);
     if (!form.category_id || !form.description.trim() || amount <= 0) {
       error('Missing fields', 'Enter description, category, and a valid amount.');
@@ -264,7 +268,11 @@ export function ExpensesPage() {
       <PageHeader
         title="Expenses"
         subtitle="Vehicle costs, showroom rent & salaries, and PPF studio rent & salaries"
-        actions={<Button onClick={() => openAddModal(activeTab)}>{addButtonLabel(activeTab)}</Button>}
+        actions={
+          isAdmin ? (
+            <Button onClick={() => openAddModal(activeTab)}>{addButtonLabel(activeTab)}</Button>
+          ) : undefined
+        }
       />
 
       <Tabs

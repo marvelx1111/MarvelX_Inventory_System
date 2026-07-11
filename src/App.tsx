@@ -21,6 +21,7 @@ import {
 import { PPFJobDetailPage } from '@/pages/PPFJobDetailPage';
 import { PPFJobsPage } from '@/pages/PPFJobsPage';
 import { PPFRollsPage } from '@/pages/PPFRollsPage';
+import { PPFExpensesPage } from '@/pages/PPFExpensesPage';
 import { UsersPage } from '@/pages/UsersPage';
 
 function AuthReadyGate({ children }: { children: React.ReactNode }) {
@@ -112,6 +113,7 @@ export default function App() {
 
           <Route element={<ProtectedRoute module="expenses" />}>
             <Route path="expenses" element={<ExpensesPage />} />
+            <Route path="ppf/expenses" element={<PPFExpensesPage />} />
           </Route>
 
           <Route element={<ProtectedRoute module="investors" />}>

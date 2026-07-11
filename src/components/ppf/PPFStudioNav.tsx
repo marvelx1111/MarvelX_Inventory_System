@@ -1,18 +1,24 @@
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/utils/format';
 
-const TABS = [
+const BASE_TABS = [
   { label: 'Jobs', href: '/ppf', end: true },
   { label: 'Roll Inventory', href: '/ppf/rolls', end: false },
 ] as const;
 
+const EXPENSES_TAB = { label: 'Expenses', href: '/ppf/expenses', end: false } as const;
+
 export function PPFStudioNav() {
+  const { isAdmin } = useAuth();
+  const tabs = isAdmin ? [...BASE_TABS, EXPENSES_TAB] : [...BASE_TABS];
+
   return (
     <nav
       className="mb-6 inline-flex w-full max-w-md rounded-xl border border-[var(--border-primary)] bg-[var(--bg-secondary)] p-1 sm:w-auto"
       aria-label="PPF Studio sections"
     >
-      {TABS.map((tab) => (
+      {tabs.map((tab) => (
         <NavLink
           key={tab.href}
           to={tab.href}
