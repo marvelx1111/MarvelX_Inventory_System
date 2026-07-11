@@ -10,6 +10,7 @@ export { CustomersPage } from './CustomersPage';
 export { CustomerDetailPage } from './CustomerDetailPage';
 export { ExpensesPage } from './ExpensesPage';
 export { InvestorsPage } from './InvestorsPage';
+export { FinancePage } from './FinancePage';
 export { PPFJobsPage } from './PPFJobsPage';
 export { PPFJobDetailPage } from './PPFJobDetailPage';
 export { PPFRollsPage } from './PPFRollsPage';

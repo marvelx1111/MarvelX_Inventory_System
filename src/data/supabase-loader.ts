@@ -125,6 +125,26 @@ export async function fetchAllFromSupabase(client: SupabaseClient): Promise<AppD
     amount: num(e.amount),
   }));
 
+  const { data: financeRow, error: financeError } = await client
+    .from('finance_settings')
+    .select('setting_id, capital, cash_in_hand, notes, updated_at, updated_by')
+    .eq('setting_id', 'fin_001')
+    .maybeSingle();
+  if (financeError) {
+    result.financeSettings = null;
+  } else {
+    result.financeSettings = financeRow
+      ? {
+          setting_id: String(financeRow.setting_id),
+          capital: num(financeRow.capital),
+          cash_in_hand: num(financeRow.cash_in_hand),
+          notes: String(financeRow.notes ?? ''),
+          updated_at: String(financeRow.updated_at ?? new Date().toISOString()),
+          updated_by: financeRow.updated_by ? String(financeRow.updated_by) : null,
+        }
+      : null;
+  }
+
   return result;
 }
 

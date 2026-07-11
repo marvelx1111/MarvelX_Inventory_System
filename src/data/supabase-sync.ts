@@ -69,6 +69,19 @@ export async function persistRowsDeleteByColumn(
   return { ok: true, persisted: true };
 }
 
+export async function persistRowUpsert(
+  table: string,
+  row: Record<string, unknown>,
+  onConflict: string,
+): Promise<PersistResult> {
+  const client = getSupabaseBrowserClient();
+  if (!client) return { ok: true, persisted: false };
+
+  const { error } = await client.from(table).upsert(row, { onConflict });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, persisted: true };
+}
+
 export function persistErrorMessage(result: PersistResult): string | null {
   if (!result.ok) return result.error;
   if (!result.persisted) {

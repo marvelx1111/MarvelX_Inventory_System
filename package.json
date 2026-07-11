@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "db:seed": "tsx scripts/supabase-seed.ts",
+    "db:clear-demo": "tsx scripts/supabase-clear-demo.ts",
     "db:auth-bootstrap": "tsx scripts/supabase-auth-bootstrap.ts",
     "db:crosscheck": "tsx scripts/supabase-crosscheck.ts",
     "db:edit-check": "tsx scripts/edit-system-loop.ts",

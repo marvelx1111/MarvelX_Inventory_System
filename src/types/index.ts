@@ -312,6 +312,17 @@ export interface AuditLog {
   ip_address: string;
 }
 
+export interface FinanceSettings {
+  setting_id: string;
+  capital: number;
+  cash_in_hand: number;
+  notes: string;
+  updated_at: string;
+  updated_by: string | null;
+}
+
+export type UpdateFinanceSettingsInput = Pick<FinanceSettings, 'capital' | 'cash_in_hand' | 'notes'>;
+
 export interface AppData {
   roles: Role[];
   permissions: Permission[];
@@ -343,6 +354,7 @@ export interface AppData {
   ppfPayments: PPFPayment[];
   ppfWarranties: PPFWarranty[];
   auditLogs: AuditLog[];
+  financeSettings: FinanceSettings | null;
 }
 
 export type PurchaseDocumentInput = {
@@ -417,6 +429,7 @@ export const PERMISSION_MODULES = [
   'customers',
   'expenses',
   'investors',
+  'finance',
   'ppf',
   'users',
   'audit',

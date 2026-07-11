@@ -5,9 +5,11 @@ import {
   persistRowsDeleteByColumn,
   persistRowsInsert,
   persistRowUpdate,
+  persistRowUpsert,
   type PersistResult,
 } from '@/data/supabase-sync';
 import { DEFAULT_EXPENSE_CATEGORIES } from '@/utils/expense-categories';
+import { computeFinanceSummary, resolveFinanceSettings, type FinanceSummary } from '@/utils/finance';
 import { computeSaleFinancials, normalizeSaleInput } from '@/utils/sale';
 import {
   getAvailablePPFRolls,
@@ -37,6 +39,7 @@ import type {
   DeliveryRecord,
   ExpenseCategory,
   Investment,
+  FinanceSettings,
   Investor,
   InvestorReturn,
   Permission,
@@ -58,6 +61,7 @@ import type {
   Sale,
   SalePayment,
   ShowroomExpense,
+  UpdateFinanceSettingsInput,
   User,
   Vehicle,
   VehicleDocument,
@@ -188,6 +192,7 @@ class DataStore {
     this.data = {
       ...data,
       expenseCategories,
+      financeSettings: resolveFinanceSettings(data.financeSettings),
       sales: data.sales.map((sale) => {
         const vehicle = vehiclesById.get(sale.vehicle_id);
         const financials = computeSaleFinancials(sale, vehicle?.total_cost ?? 0);
@@ -501,6 +506,45 @@ class DataStore {
 
   getAuditLogs(): AuditLog[] {
     return this.data.auditLogs;
+  }
+
+  getFinanceSettings(): FinanceSettings {
+    return resolveFinanceSettings(this.data.financeSettings);
+  }
+
+  getFinanceSummary(): FinanceSummary {
+    return computeFinanceSummary(this.data);
+  }
+
+  async updateFinanceSettings(
+    input: UpdateFinanceSettingsInput,
+    userId: string | null,
+  ): Promise<FinanceSettings> {
+    const current = this.getFinanceSettings();
+    const next: FinanceSettings = {
+      ...current,
+      capital: roundPKR(input.capital),
+      cash_in_hand: roundPKR(input.cash_in_hand),
+      notes: input.notes.trim(),
+      updated_at: new Date().toISOString(),
+      updated_by: userId,
+    };
+
+    this.data.financeSettings = next;
+    ensurePersisted(
+      await persistRowUpsert('finance_settings', {
+        setting_id: next.setting_id,
+        capital: next.capital,
+        cash_in_hand: next.cash_in_hand,
+        notes: next.notes,
+        updated_at: next.updated_at,
+        updated_by: next.updated_by,
+      }, 'setting_id'),
+    );
+
+    this.revision += 1;
+    this.notify();
+    return next;
   }
 
   getUserById(id: string): User | undefined {

@@ -9,6 +9,7 @@ import {
   CustomersPage,
   DashboardPage,
   ExpensesPage,
+  FinancePage,
   InventoryPage,
   InvestorsPage,
   LoginPage,
@@ -118,6 +119,10 @@ export default function App() {
 
           <Route element={<ProtectedRoute module="investors" />}>
             <Route path="investors" element={<InvestorsPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute module="finance" />}>
+            <Route path="finance" element={<FinancePage />} />
           </Route>
 
           <Route element={<ProtectedRoute module="ppf" />}>

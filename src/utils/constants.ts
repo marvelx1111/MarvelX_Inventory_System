@@ -4,7 +4,7 @@ export interface NavItem {
   label: string;
   href: string;
   module: PermissionModule;
-  icon: 'dashboard' | 'inventory' | 'purchases' | 'sales' | 'customers' | 'expenses' | 'investors' | 'ppf' | 'users' | 'audit';
+  icon: 'dashboard' | 'inventory' | 'purchases' | 'sales' | 'customers' | 'expenses' | 'investors' | 'finance' | 'ppf' | 'users' | 'audit';
   description?: string;
 }
 
@@ -57,6 +57,13 @@ export const NAV_ITEMS: NavItem[] = [
     module: 'investors',
     icon: 'investors',
     description: 'Investor management',
+  },
+  {
+    label: 'Finance',
+    href: '/finance',
+    module: 'finance',
+    icon: 'finance',
+    description: 'Profit, loss, capital, and cash position',
   },
   {
     label: 'PPF Studio',
