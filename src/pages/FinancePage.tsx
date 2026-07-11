@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import { FinanceTrendChart } from '@/components/charts/FinanceTrendChart';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -16,6 +15,10 @@ import { estimateCashInHand } from '@/utils/finance';
 import { formatDate, formatPKR, parseMoneyInput } from '@/utils/format';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
+
+const FinanceTrendChart = lazy(() =>
+  import('@/components/charts/FinanceTrendChart').then((m) => ({ default: m.FinanceTrendChart })),
+);
 
 function MetricCard({
   label,
@@ -192,7 +195,9 @@ export function FinancePage() {
       </div>
 
       <div className="mb-6">
-        <FinanceTrendChart data={summary.monthlyTrend} />
+        <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+          <FinanceTrendChart data={summary.monthlyTrend} />
+        </Suspense>
       </div>
 
       <Tabs defaultValue="overview">

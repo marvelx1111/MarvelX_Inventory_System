@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { BRAND, NAV_ITEMS } from '@/utils/constants';
 import { cn, getInitials } from '@/utils/format';
+import { preloadRoute } from '@/utils/route-preload';
 import { NavIcon } from './NavIcon';
 
 interface SidebarProps {
@@ -61,6 +62,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             to={item.href}
             end={item.href === '/'}
             title={collapsed ? item.label : undefined}
+            onFocus={() => preloadRoute(item.href)}
+            onPointerEnter={() => preloadRoute(item.href)}
             className={({ isActive }) =>
               cn(
                 'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
+import { lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
-import { SalesTrendChart } from '@/components/charts/SalesTrendChart';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -10,6 +10,10 @@ import { store } from '@/data/store';
 import { formatDate, formatPKR } from '@/utils/format';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
+
+const SalesTrendChart = lazy(() =>
+  import('@/components/charts/SalesTrendChart').then((m) => ({ default: m.SalesTrendChart })),
+);
 
 const KPI_CONFIG = [
   {
@@ -147,7 +151,9 @@ export function DashboardPage() {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <SalesTrendChart data={trendData} />
+          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+            <SalesTrendChart data={trendData} />
+          </Suspense>
         </div>
 
         <Card padding="none" className="lg:col-span-2 overflow-hidden">

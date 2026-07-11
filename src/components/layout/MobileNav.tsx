@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { NAV_ITEMS } from '@/utils/constants';
 import { cn } from '@/utils/format';
+import { preloadRoute } from '@/utils/route-preload';
 import { NavIcon } from './NavIcon';
 
 const MOBILE_NAV_MODULES = ['dashboard', 'inventory', 'sales', 'customers', 'ppf'] as const;
@@ -23,6 +24,8 @@ export function MobileNav() {
             key={item.href}
             to={item.href}
             end={item.href === '/'}
+            onFocus={() => preloadRoute(item.href)}
+            onTouchStart={() => preloadRoute(item.href)}
             className={({ isActive }) =>
               cn(
                 'flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors',
