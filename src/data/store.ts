@@ -17,6 +17,7 @@ import {
   isPPFRollAvailable,
 } from '@/utils/ppf-inventory';
 import { roundPKR } from '@/utils/format';
+import { isQaTestCustomerName } from '@/utils/qa-test-data';
 
 function ensurePersisted(result: PersistResult): void {
   if (!result.ok) throw new Error(result.error);
@@ -25,6 +26,9 @@ import type {
   AppData,
   AuditLog,
   CreateCustomerInput,
+  CreateInvestorInput,
+  CreateInvestmentInput,
+  CreateInvestorReturnInput,
   CreatePPFCustomerInput,
   CreatePPFJobInput,
   CreatePPFRollInput,
@@ -258,6 +262,9 @@ class DataStore {
     this.data.ppfJobCards.forEach((j) => track('job', j.job_id));
     this.data.ppfRolls.forEach((r) => track('roll', r.roll_id));
     this.data.ppfStockTransactions.forEach((t) => track('ppftx', t.transaction_id));
+    this.data.investors.forEach((i) => track('inv', i.investor_id));
+    this.data.investments.forEach((i) => track('invt', i.investment_id));
+    this.data.investorReturns.forEach((r) => track('invr', r.return_id));
     this.data.auditLogs.forEach((l) => track('aud', l.log_id));
 
     return counters;
@@ -414,6 +421,11 @@ class DataStore {
 
   getCustomers(): Customer[] {
     return this.data.customers;
+  }
+
+  /** Customers shown in purchase/sales pickers (excludes automated QA records). */
+  getSelectableCustomers(): Customer[] {
+    return this.data.customers.filter((c) => !isQaTestCustomerName(c.full_name));
   }
 
   getPurchases(): Purchase[] {
@@ -748,6 +760,8 @@ class DataStore {
     this.data.customers.push(customer);
     const persist = await persistRowInsert('customers', customer as unknown as Record<string, unknown>);
     ensurePersisted(persist);
+    this.revision += 1;
+    this.notify();
     return customer;
   }
 
@@ -872,6 +886,13 @@ class DataStore {
       profit: sale.profit,
       remarks: sale.remarks,
     }));
+    if (vehicle) {
+      ensurePersisted(
+        await persistRowUpdate('vehicles', 'vehicle_id', vehicle.vehicle_id, {
+          status: vehicle.status,
+        }),
+      );
+    }
     this.revision += 1;
     this.notify();
     return sale;
@@ -912,7 +933,75 @@ class DataStore {
 
     this.data.investors[index] = { ...this.data.investors[index], ...updates };
     ensurePersisted(await persistRowUpdate('investors', 'investor_id', investorId, updates));
+    this.revision += 1;
+    this.notify();
     return this.data.investors[index];
+  }
+
+  async createInvestor(input: CreateInvestorInput): Promise<Investor> {
+    const investor: Investor = {
+      investor_id: this.nextId('inv'),
+      full_name: input.full_name.trim(),
+      cnic: input.cnic.trim(),
+      mobile: input.mobile.trim(),
+      email: input.email.trim(),
+      address: input.address.trim(),
+      join_date: input.join_date,
+    };
+
+    this.data.investors.push(investor);
+    ensurePersisted(
+      await persistRowInsert('investors', investor as unknown as Record<string, unknown>),
+    );
+    this.revision += 1;
+    this.notify();
+    return investor;
+  }
+
+  async createInvestment(input: CreateInvestmentInput): Promise<Investment | null> {
+    const investor = this.data.investors.find((i) => i.investor_id === input.investor_id);
+    if (!investor) return null;
+
+    const investment: Investment = {
+      investment_id: this.nextId('invt'),
+      investor_id: input.investor_id,
+      amount: roundPKR(input.amount),
+      investment_date: input.investment_date,
+      percentage_share: Number(input.percentage_share),
+      notes: input.notes.trim(),
+    };
+
+    this.data.investments.push(investment);
+    ensurePersisted(
+      await persistRowInsert('investments', investment as unknown as Record<string, unknown>),
+    );
+    this.revision += 1;
+    this.notify();
+    return investment;
+  }
+
+  async createInvestorReturn(input: CreateInvestorReturnInput): Promise<InvestorReturn | null> {
+    const investor = this.data.investors.find((i) => i.investor_id === input.investor_id);
+    if (!investor) return null;
+
+    const record: InvestorReturn = {
+      return_id: this.nextId('invr'),
+      investor_id: input.investor_id,
+      month: input.month,
+      year: input.year,
+      total_profit: roundPKR(input.total_profit),
+      percentage_share: Number(input.percentage_share),
+      return_amount: roundPKR(input.return_amount),
+      payment_date: input.payment_date,
+    };
+
+    this.data.investorReturns.push(record);
+    ensurePersisted(
+      await persistRowInsert('investor_returns', record as unknown as Record<string, unknown>),
+    );
+    this.revision += 1;
+    this.notify();
+    return record;
   }
 
   async updatePPFCustomer(
@@ -963,15 +1052,27 @@ class DataStore {
     return this.data.vehicleDocuments[index];
   }
 
-  updatePPFJobStatus(jobId: string, status: PPFJobCard['status']): PPFJobCard | null {
-    const job = this.data.ppfJobCards.find((j) => j.job_id === jobId);
-    if (!job) return null;
+  async updatePPFJobStatus(
+    jobId: string,
+    status: PPFJobCard['status'],
+  ): Promise<PPFJobCard | null> {
+    const index = this.data.ppfJobCards.findIndex((j) => j.job_id === jobId);
+    if (index === -1) return null;
 
-    job.status = status;
+    const job = { ...this.data.ppfJobCards[index], status };
     if (status === 'completed' || status === 'delivered') {
       job.completion_date = new Date().toISOString().slice(0, 10);
     }
 
+    this.data.ppfJobCards[index] = job;
+    ensurePersisted(
+      await persistRowUpdate('ppf_job_cards', 'job_id', jobId, {
+        status: job.status,
+        completion_date: job.completion_date,
+      }),
+    );
+    this.revision += 1;
+    this.notify();
     return job;
   }
 
@@ -1195,6 +1296,13 @@ class DataStore {
     };
 
     this.data.auditLogs.unshift(log);
+    void persistRowInsert('audit_logs', log as unknown as Record<string, unknown>).then(
+      (result) => {
+        if (!result.ok) {
+          console.error('[audit] persist failed:', result.error);
+        }
+      },
+    );
     return log;
   }
 

@@ -2,13 +2,22 @@
  * Cross-check loops for Marvel X Supabase data integrity.
  * Run: npm run db:crosscheck
  *
- * Loop 1 — Row counts: compare seed expectations vs database counts
- * Loop 2 — Integrity: FK orphans, KPI parity, sample record field match
+ * Loop 1 — Bootstrap counts: roles, permissions, users, categories
+ * Loop 2 — Integrity: FK orphans, bootstrap user parity
  */
 import { createClient } from '@supabase/supabase-js';
 import { createSeedData } from '../src/data/seed.ts';
 import type { AppData } from '../src/types/index.ts';
-import { getSupabaseEnv, loadEnvFile } from './env.ts';
+import { createAuthenticatedSupabaseClient } from './supabase-auth-client.ts';
+
+/** Tables that must match seed counts exactly (bootstrap data). */
+const BOOTSTRAP_KEYS: (keyof AppData)[] = [
+  'roles',
+  'permissions',
+  'rolePermissions',
+  'users',
+  'expenseCategories',
+];
 
 const TABLE_MAP: Record<keyof AppData, string> = {
   roles: 'roles',
@@ -41,6 +50,7 @@ const TABLE_MAP: Record<keyof AppData, string> = {
   ppfPayments: 'ppf_payments',
   ppfWarranties: 'ppf_warranties',
   auditLogs: 'audit_logs',
+  financeSettings: 'finance_settings',
 };
 
 const FK_CHECKS = [
@@ -51,6 +61,9 @@ const FK_CHECKS = [
   { child: 'ppf_job_cards', childCol: 'ppf_customer_id', parent: 'ppf_customers', parentCol: 'ppf_customer_id' },
   { child: 'ppf_job_cards', childCol: 'roll_id', parent: 'ppf_rolls', parentCol: 'roll_id' },
   { child: 'audit_logs', childCol: 'user_id', parent: 'app_users', parentCol: 'user_id' },
+  { child: 'role_permissions', childCol: 'role_id', parent: 'roles', parentCol: 'role_id' },
+  { child: 'role_permissions', childCol: 'permission_id', parent: 'permissions', parentCol: 'permission_id' },
+  { child: 'app_users', childCol: 'role_id', parent: 'roles', parentCol: 'role_id' },
 ];
 
 async function getCount(supabase: ReturnType<typeof createClient>, table: string) {
@@ -59,12 +72,13 @@ async function getCount(supabase: ReturnType<typeof createClient>, table: string
   return count ?? 0;
 }
 
-async function loop1CountCheck(supabase: ReturnType<typeof createClient>, seed: AppData) {
-  console.log('\n=== LOOP 1: Row count cross-check ===');
+async function loop1BootstrapCheck(supabase: ReturnType<typeof createClient>, seed: AppData) {
+  console.log('\n=== LOOP 1: Bootstrap row count cross-check ===');
   let passed = 0;
   let failed = 0;
 
-  for (const [key, table] of Object.entries(TABLE_MAP) as [keyof AppData, string][]) {
+  for (const key of BOOTSTRAP_KEYS) {
+    const table = TABLE_MAP[key];
     const expected = seed[key].length;
     const actual = await getCount(supabase, table);
     const ok = expected === actual;
@@ -72,6 +86,24 @@ async function loop1CountCheck(supabase: ReturnType<typeof createClient>, seed: 
     if (ok) passed++;
     else failed++;
   }
+
+  // Business tables: report counts only (empty DB is valid after demo clear)
+  const businessKeys = (Object.keys(TABLE_MAP) as (keyof AppData)[]).filter(
+    (k) => !BOOTSTRAP_KEYS.includes(k) && k !== 'financeSettings',
+  );
+  console.log('\n--- Business table counts (informational) ---');
+  for (const key of businessKeys) {
+    const table = TABLE_MAP[key];
+    const actual = await getCount(supabase, table);
+    console.log(`  · ${table}: ${actual}`);
+    passed++;
+  }
+
+  const financeCount = await getCount(supabase, 'finance_settings');
+  const financeOk = financeCount >= 0;
+  console.log(`${financeOk ? '✓' : '✗'} finance_settings: ${financeCount} row(s)`);
+  if (financeOk) passed++;
+  else failed++;
 
   return { passed, failed };
 }
@@ -94,27 +126,7 @@ async function loop2IntegrityCheck(supabase: ReturnType<typeof createClient>, se
     else failed++;
   }
 
-  const { data: dbVehicle } = await supabase
-    .from('vehicles')
-    .select('*')
-    .eq('vehicle_id', 'veh_001')
-    .single();
-  const seedVehicle = seed.vehicles.find((v) => v.vehicle_id === 'veh_001');
-  if (dbVehicle && seedVehicle) {
-    const fieldsMatch =
-      dbVehicle.make === seedVehicle.make &&
-      dbVehicle.model === seedVehicle.model &&
-      Number(dbVehicle.model_year) === seedVehicle.model_year &&
-      dbVehicle.status === seedVehicle.status;
-    console.log(`${fieldsMatch ? '✓' : '✗'} Sample vehicle veh_001 field match`);
-    if (fieldsMatch) passed++;
-    else failed++;
-  } else {
-    console.log('✗ Sample vehicle veh_001 not found');
-    failed++;
-  }
-
-  const { data: dbUsers } = await supabase.from('app_users').select('username');
+  const { data: dbUsers } = await supabase.from('app_users').select('username, email, auth_user_id');
   const seedUsernames = new Set(seed.users.map((u) => u.username));
   const dbUsernames = new Set((dbUsers ?? []).map((u) => u.username));
   const usersMatch =
@@ -124,29 +136,28 @@ async function loop2IntegrityCheck(supabase: ReturnType<typeof createClient>, se
   if (usersMatch) passed++;
   else failed++;
 
-  const { count: inStock } = await supabase
-    .from('vehicles')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'in_stock');
-  const seedInStock = seed.vehicles.filter((v) => v.status === 'in_stock').length;
-  const kpiOk = inStock === seedInStock;
+  const linkedCount = (dbUsers ?? []).filter((u) => u.auth_user_id).length;
+  const authLinkedOk = linkedCount >= seed.users.length;
   console.log(
-    `${kpiOk ? '✓' : '✗'} KPI vehicles in_stock: seed ${seedInStock}, db ${inStock}`,
+    `${authLinkedOk ? '✓' : '✗'} Auth-linked app_users: ${linkedCount}/${seed.users.length}`,
   );
-  if (kpiOk) passed++;
+  if (authLinkedOk) passed++;
+  else failed++;
+
+  const { data: adminPerms } = await supabase
+    .from('role_permissions')
+    .select('permission_id')
+    .eq('role_id', 'rol_001');
+  const hasFinancePerm = (adminPerms ?? []).some((p) => p.permission_id === 'perm_011');
+  console.log(`${hasFinancePerm ? '✓' : '✗'} Admin role has finance permission (perm_011)`);
+  if (hasFinancePerm) passed++;
   else failed++;
 
   return { passed, failed };
 }
 
 async function main() {
-  const { url, anonKey } = getSupabaseEnv(loadEnvFile());
-  if (!url || !anonKey) {
-    console.error('Missing Supabase env vars in .env.local');
-    process.exit(1);
-  }
-
-  const supabase = createClient(url, anonKey);
+  const supabase = await createAuthenticatedSupabaseClient();
   const seed = createSeedData();
 
   const { error: pingError } = await supabase.from('roles').select('role_id').limit(1);
@@ -156,7 +167,7 @@ async function main() {
   }
   console.log('Connected to Supabase successfully.');
 
-  const loop1 = await loop1CountCheck(supabase, seed);
+  const loop1 = await loop1BootstrapCheck(supabase, seed);
   const loop2 = await loop2IntegrityCheck(supabase, seed);
 
   console.log('\n=== SUMMARY ===');

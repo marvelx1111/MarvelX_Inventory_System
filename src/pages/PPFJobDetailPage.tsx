@@ -76,7 +76,7 @@ export function PPFJobDetailPage() {
       setUpdating(true);
       await new Promise((r) => window.setTimeout(r, 200));
 
-      const updated = store.updatePPFJobStatus(jobId, nextStatus);
+      const updated = await store.updatePPFJobStatus(jobId, nextStatus);
       if (!updated) {
         error('Update failed', 'Could not change job status.');
         setUpdating(false);

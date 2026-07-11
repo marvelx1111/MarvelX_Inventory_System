@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
@@ -85,9 +85,12 @@ export function PurchasesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [createSellerOpen, setCreateSellerOpen] = useState(false);
   const [creatingSeller, setCreatingSeller] = useState(false);
-  const [, refresh] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
+  void refreshKey;
 
-  const customers = store.getCustomers();
+  useEffect(() => store.subscribe(() => setRefreshKey((n) => n + 1)), []);
+
+  const customers = store.getSelectableCustomers();
   const purchases = [...store.getPurchases()]
     .sort((a, b) => new Date(b.purchase_date).getTime() - new Date(a.purchase_date).getTime())
     .slice(0, 10);
@@ -110,7 +113,7 @@ export function PurchasesPage() {
       update('seller_customer_id', created.customer_id);
       setCreateSellerOpen(false);
       success('Seller added', `${created.full_name} is ready to select as seller.`);
-      refresh((n) => n + 1);
+      setRefreshKey((n) => n + 1);
     } catch (err) {
       error('Could not add seller', err instanceof Error ? err.message : 'Save failed.');
     } finally {
@@ -125,7 +128,12 @@ export function PurchasesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.seller_customer_id || !form.make || !form.model || !form.purchase_price) {
-      error('Missing fields', 'Please fill in all required fields');
+      if (!form.seller_customer_id && customers.length === 0) {
+        error('Add a seller first', 'Click “Add your first seller/dealer” before recording a purchase.');
+        setCreateSellerOpen(true);
+        return;
+      }
+      error('Missing fields', 'Please fill in seller, make, model, and purchase price.');
       return;
     }
 
@@ -181,7 +189,7 @@ export function PurchasesPage() {
       );
       setForm(initialForm);
       setDocForm(initialDocForm);
-      refresh((n) => n + 1);
+      setRefreshKey((n) => n + 1);
     } catch (err) {
       error('Could not save purchase', err instanceof Error ? err.message : 'Save failed.');
     } finally {
@@ -216,38 +224,56 @@ export function PurchasesPage() {
             <CardTitle>New Purchase</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <div className="flex-1">
-                  <Select
-                    label="Seller (Customer / Dealer)"
-                    required
-                    value={form.seller_customer_id}
-                    onChange={(e) => update('seller_customer_id', e.target.value)}
-                    placeholder="Select seller"
-                    options={customers.map((c) => ({
-                      value: c.customer_id,
-                      label: `${c.full_name} · ${TYPE_LABEL[c.customer_type] ?? c.customer_type} · ${c.city}`,
-                    }))}
-                  />
-                </div>
-                <Button type="button" variant="secondary" onClick={() => setCreateSellerOpen(true)}>
-                  + Add seller/dealer
-                </Button>
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-[var(--text-primary)]">
+                  Seller (Customer / Dealer)
+                </p>
+                {customers.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-[var(--border-primary)] bg-[var(--bg-secondary)] px-4 py-5 text-center">
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      No sellers or dealers yet. Add one to record a purchase.
+                    </p>
+                    <Button
+                      type="button"
+                      className="mt-3"
+                      onClick={() => setCreateSellerOpen(true)}
+                    >
+                      + Add your first seller/dealer
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    <div className="flex-1">
+                      <Select
+                        label=""
+                        value={form.seller_customer_id}
+                        onChange={(e) => update('seller_customer_id', e.target.value)}
+                        placeholder="Select seller"
+                        hint="Choose who you bought this vehicle from"
+                        options={customers.map((c) => ({
+                          value: c.customer_id,
+                          label: `${c.full_name} · ${TYPE_LABEL[c.customer_type] ?? c.customer_type} · ${c.city}`,
+                        }))}
+                      />
+                    </div>
+                    <Button type="button" variant="secondary" onClick={() => setCreateSellerOpen(true)}>
+                      + Add seller/dealer
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   label="Purchase date"
                   type="date"
-                  required
                   value={form.purchase_date}
                   onChange={(e) => update('purchase_date', e.target.value)}
                 />
                 <Input
                   label="Purchase price (PKR)"
                   type="number"
-                  required
                   min={0}
                   value={form.purchase_price}
                   onChange={(e) => update('purchase_price', e.target.value)}
@@ -268,8 +294,8 @@ export function PurchasesPage() {
               <div className="border-t border-[var(--border-secondary)] pt-4">
                 <p className="mb-3 text-sm font-medium text-[var(--text-primary)]">Vehicle details</p>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Input label="Make" required value={form.make} onChange={(e) => update('make', e.target.value)} />
-                  <Input label="Model" required value={form.model} onChange={(e) => update('model', e.target.value)} />
+                  <Input label="Make" value={form.make} onChange={(e) => update('make', e.target.value)} />
+                  <Input label="Model" value={form.model} onChange={(e) => update('model', e.target.value)} />
                   <Input label="Variant" value={form.variant} onChange={(e) => update('variant', e.target.value)} />
                   <Input
                     label="Model year"

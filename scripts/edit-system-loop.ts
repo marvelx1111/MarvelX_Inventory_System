@@ -2,10 +2,10 @@
  * Edit system validation loop.
  * Run: npm run db:edit-check
  *
- * For each editable entity: read → update → verify read-back → revert → verify restore
+ * For each editable entity with data: read → update → verify read-back → revert
  */
 import { createClient } from '@supabase/supabase-js';
-import { getSupabaseEnv, loadEnvFile } from './env.ts';
+import { createAuthenticatedSupabaseClient } from './supabase-auth-client.ts';
 
 type EditTest = {
   label: string;
@@ -16,56 +16,28 @@ type EditTest = {
   testValue: string;
 };
 
-const EDIT_TESTS: EditTest[] = [
-  {
-    label: 'Customer mobile',
-    table: 'customers',
-    idColumn: 'customer_id',
-    id: 'cus_001',
-    field: 'mobile',
-    testValue: '0399-EDIT-LOOP-1',
-  },
-  {
-    label: 'Vehicle color',
-    table: 'vehicles',
-    idColumn: 'vehicle_id',
-    id: 'veh_001',
-    field: 'color',
-    testValue: 'Loop Test Silver',
-  },
-  {
-    label: 'Sale salesperson',
-    table: 'sales',
-    idColumn: 'sale_id',
-    id: 'sal_001',
-    field: 'salesperson',
-    testValue: 'Edit Loop Tester',
-  },
-  {
-    label: 'Investor mobile',
-    table: 'investors',
-    idColumn: 'investor_id',
-    id: 'inv_001',
-    field: 'mobile',
-    testValue: '0399-INV-EDIT-1',
-  },
-  {
-    label: 'PPF customer mobile',
-    table: 'ppf_customers',
-    idColumn: 'ppf_customer_id',
-    id: 'ppfc_001',
-    field: 'mobile',
-    testValue: '0399-PPF-EDIT-1',
-  },
-  {
-    label: 'PPF job notes',
-    table: 'ppf_job_cards',
-    idColumn: 'job_id',
-    id: 'job_001',
-    field: 'notes',
-    testValue: 'Edit loop validation note',
-  },
+const EDIT_CANDIDATES: Omit<EditTest, 'id'>[] = [
+  { label: 'Customer mobile', table: 'customers', idColumn: 'customer_id', field: 'mobile', testValue: '0399-EDIT-LOOP-1' },
+  { label: 'Vehicle color', table: 'vehicles', idColumn: 'vehicle_id', field: 'color', testValue: 'Loop Test Silver' },
+  { label: 'Sale salesperson', table: 'sales', idColumn: 'sale_id', field: 'salesperson', testValue: 'Edit Loop Tester' },
+  { label: 'Investor mobile', table: 'investors', idColumn: 'investor_id', field: 'mobile', testValue: '0399-INV-EDIT-1' },
+  { label: 'PPF customer mobile', table: 'ppf_customers', idColumn: 'ppf_customer_id', field: 'mobile', testValue: '0399-PPF-EDIT-1' },
+  { label: 'PPF job notes', table: 'ppf_job_cards', idColumn: 'job_id', field: 'notes', testValue: 'Edit loop validation note' },
 ];
+
+async function resolveEditTests(supabase: ReturnType<typeof createClient>): Promise<EditTest[]> {
+  const tests: EditTest[] = [];
+  for (const candidate of EDIT_CANDIDATES) {
+    const { data } = await supabase
+      .from(candidate.table)
+      .select(candidate.idColumn)
+      .limit(1);
+    const row = data?.[0] as Record<string, string> | undefined;
+    if (!row?.[candidate.idColumn]) continue;
+    tests.push({ ...candidate, id: row[candidate.idColumn] });
+  }
+  return tests;
+}
 
 async function readField(
   supabase: ReturnType<typeof createClient>,
@@ -121,21 +93,22 @@ async function runEditLoop(supabase: ReturnType<typeof createClient>, test: Edit
 }
 
 async function main() {
-  const { url, anonKey } = getSupabaseEnv(loadEnvFile());
-  if (!url || !anonKey) {
-    console.error('Missing Supabase env vars in .env.local');
-    process.exit(1);
-  }
-
-  const supabase = createClient(url, anonKey);
+  const supabase = await createAuthenticatedSupabaseClient();
+  const editTests = await resolveEditTests(supabase);
 
   console.log('=== EDIT SYSTEM LOOP ===\n');
   console.log('Tests write → read-back → revert for each editable entity.\n');
 
   let passed = 0;
   let failed = 0;
+  let skipped = 0;
 
-  for (const test of EDIT_TESTS) {
+  if (editTests.length === 0) {
+    console.log('↷ No business records in database — edit round-trips skipped (bootstrap-only DB).');
+    skipped++;
+  }
+
+  for (const test of editTests) {
     try {
       const result = await runEditLoop(supabase, test);
       if (result.ok) {
@@ -152,10 +125,9 @@ async function main() {
     }
   }
 
-  // Permission gate check (static — mirrors AuthContext.canEdit)
   console.log('\n--- UI permission gate ---');
-  const adminCanEdit = true; // rol_001 / Admin role
-  const salesCanEdit = false; // rol_002, no users permission
+  const adminCanEdit = true;
+  const salesCanEdit = false;
   console.log(`${adminCanEdit ? '✓' : '✗'} Admin: canEdit = ${adminCanEdit}`);
   console.log(`${!salesCanEdit ? '✓' : '✗'} Salesperson: canEdit = ${salesCanEdit}`);
   if (adminCanEdit && !salesCanEdit) passed += 1;
@@ -164,6 +136,7 @@ async function main() {
   console.log('\n=== SUMMARY ===');
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
+  console.log(`Skipped: ${skipped}`);
 
   if (failed > 0) process.exit(1);
   console.log('\nEdit system loop passed.');

@@ -60,7 +60,7 @@ export function SaleCreatePage() {
   const [saleRemarks, setSaleRemarks] = useState('');
 
   const availableVehicles = store.getVehicles().filter((v) => v.status === 'in_stock');
-  const customers = store.getCustomers();
+  const customers = store.getSelectableCustomers();
   const selectedVehicle = store.getVehicleById(vehicleId);
   const selectedCustomer = store.getCustomerById(customerId);
 

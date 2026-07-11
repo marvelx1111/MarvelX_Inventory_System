@@ -85,6 +85,33 @@ export const INVESTOR_EDIT_FIELDS: EditFieldConfig[] = [
   { key: 'join_date', label: 'Join date', type: 'date', required: true },
 ];
 
+export const INVESTOR_CREATE_DEFAULT_VALUES: Record<string, string> = {
+  full_name: '',
+  cnic: '',
+  mobile: '',
+  email: '',
+  address: '',
+  join_date: new Date().toISOString().slice(0, 10),
+};
+
+export const INVESTMENT_CREATE_DEFAULT_VALUES: Record<string, string> = {
+  amount: '',
+  investment_date: new Date().toISOString().slice(0, 10),
+  percentage_share: '',
+  notes: '',
+};
+
+export function parseInvestorFormValues(values: Record<string, string>) {
+  return {
+    full_name: values.full_name.trim(),
+    cnic: values.cnic.trim(),
+    mobile: values.mobile.trim(),
+    email: values.email.trim(),
+    address: values.address.trim(),
+    join_date: values.join_date,
+  };
+}
+
 export const PPF_CUSTOMER_EDIT_FIELDS: EditFieldConfig[] = [
   { key: 'full_name', label: 'Full name', required: true },
   { key: 'mobile', label: 'Mobile', type: 'tel', required: true },

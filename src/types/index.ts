@@ -187,6 +187,33 @@ export interface InvestorReturn {
   payment_date: string;
 }
 
+export interface CreateInvestorInput {
+  full_name: string;
+  cnic: string;
+  mobile: string;
+  email: string;
+  address: string;
+  join_date: string;
+}
+
+export interface CreateInvestmentInput {
+  investor_id: string;
+  amount: number;
+  investment_date: string;
+  percentage_share: number;
+  notes: string;
+}
+
+export interface CreateInvestorReturnInput {
+  investor_id: string;
+  month: number;
+  year: number;
+  total_profit: number;
+  percentage_share: number;
+  return_amount: number;
+  payment_date: string;
+}
+
 export interface PPFCustomer {
   ppf_customer_id: string;
   full_name: string;

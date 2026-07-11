@@ -10,13 +10,17 @@
     "lint": "eslint .",
     "db:seed": "tsx scripts/supabase-seed.ts",
     "db:clear-demo": "tsx scripts/supabase-clear-demo.ts",
+    "db:clear-qa": "tsx --tsconfig tsconfig.app.json scripts/clear-qa-data.ts",
     "db:auth-bootstrap": "tsx scripts/supabase-auth-bootstrap.ts",
-    "db:crosscheck": "tsx scripts/supabase-crosscheck.ts",
-    "db:edit-check": "tsx scripts/edit-system-loop.ts",
+    "db:update-passwords": "tsx scripts/supabase-update-passwords.ts",
+    "db:crosscheck": "tsx --tsconfig tsconfig.app.json scripts/supabase-crosscheck.ts",
+    "db:edit-check": "tsx --tsconfig tsconfig.app.json scripts/edit-system-loop.ts",
     "ui:edit-check": "tsx scripts/ui-edit-loop.ts",
     "ui:edit-check:prod": "tsx scripts/ui-edit-loop.ts https://marvelx-inventory-system.vercel.app",
     "ui:create-check": "tsx scripts/create-customer-loop.ts",
-    "ui:create-check:prod": "tsx scripts/create-customer-loop.ts https://marvelx-inventory-system.vercel.app"
+    "ui:create-check:prod": "tsx scripts/create-customer-loop.ts https://marvelx-inventory-system.vercel.app",
+    "qa:full": "tsx scripts/qa-full-loop.ts",
+    "qa:full:prod": "tsx scripts/qa-full-loop.ts https://marvelx-inventory-system.vercel.app"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.1",

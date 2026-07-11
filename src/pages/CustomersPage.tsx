@@ -46,7 +46,7 @@ export function CustomersPage() {
   const [saving, setSaving] = useState(false);
   void refreshKey;
 
-  const customers = store.getCustomers();
+  const customers = store.getSelectableCustomers();
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
