@@ -376,12 +376,12 @@ class DataStore {
     return this.data.users.some((u) => u.username.toLowerCase() === username.trim().toLowerCase());
   }
 
-  /** Local dev only — gated by VITE_ALLOW_DEMO_AUTH in AuthContext */
+  /** Local dev only — passwords come from VITE_DEMO_PASSWORD_* in .env.local */
   authenticateDemo(username: string, password: string): User | null {
-    const demoPasswords: Record<string, string> = {
-      admin: 'admin123',
-      sales: 'sales123',
-      ppf_manager: 'ppf123',
+    const demoPasswords: Record<string, string | undefined> = {
+      admin: import.meta.env.VITE_DEMO_PASSWORD_ADMIN,
+      sales: import.meta.env.VITE_DEMO_PASSWORD_SALES,
+      ppf_manager: import.meta.env.VITE_DEMO_PASSWORD_PPF,
     };
     const expected = demoPasswords[username];
     if (!expected || expected !== password) return null;

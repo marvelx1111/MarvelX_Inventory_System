@@ -20,7 +20,8 @@
     "ui:create-check": "tsx scripts/create-customer-loop.ts",
     "ui:create-check:prod": "tsx scripts/create-customer-loop.ts https://marvelx-inventory-system.vercel.app",
     "qa:full": "tsx scripts/qa-full-loop.ts",
-    "qa:full:prod": "tsx scripts/qa-full-loop.ts https://marvelx-inventory-system.vercel.app"
+    "qa:full:prod": "tsx scripts/qa-full-loop.ts https://marvelx-inventory-system.vercel.app",
+    "security:check": "tsx scripts/security-check.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.1",

@@ -41,19 +41,19 @@ AUTH_PASSWORD_PPF=choose-a-strong-password-min-12-chars
 npm run db:auth-bootstrap
 ```
 
-3. Sign in at `/login` with email and the password you set above.
+3. Sign in at `/login` with email and the password you set in `.env.local`.
 
 ### Portal sign-in (Supabase Auth)
 
-Use **email** (not username) on the login page:
+Use **email** (not username) on the login page. Passwords live only in `.env.local` and Supabase Auth — **never commit them to Git**.
 
-| Portal | Email | Default password |
-|--------|-------|------------------|
-| Admin | `admin@marvelx.pk` | Value of `AUTH_PASSWORD_ADMIN` in `.env.local` |
-| Sales | `sales@marvelx.pk` | `sales123` |
-| PPF Manager | `ppf@marvelx.pk` | `ppf123` |
+| Portal | Email |
+|--------|-------|
+| Admin | `admin@marvelx.pk` |
+| Sales | `sales@marvelx.pk` |
+| PPF Manager | `ppf@marvelx.pk` |
 
-Passwords are hashed by Supabase Auth — they are never stored in plain text in the database. Rotate weak defaults after first login.
+Set `AUTH_PASSWORD_ADMIN`, `AUTH_PASSWORD_SALES`, and `AUTH_PASSWORD_PPF` in `.env.local`, then run `npm run db:auth-bootstrap`. Use strong unique passwords (12+ characters).
 
 ### Local demo mode (development only)
 
@@ -61,19 +61,12 @@ To use offline mock login without Supabase Auth, set in `.env.local`:
 
 ```bash
 VITE_ALLOW_DEMO_AUTH=true
+VITE_DEMO_PASSWORD_ADMIN=your-local-dev-password
+VITE_DEMO_PASSWORD_SALES=your-local-dev-password
+VITE_DEMO_PASSWORD_PPF=your-local-dev-password
 ```
 
-This is disabled in production builds when Supabase is configured.
-
-## Demo Accounts (local demo mode only)
-
-| Username | Password | Role |
-|----------|----------|------|
-| `admin` | `admin123` | Full access |
-| `sales` | `sales123` | Sales & inventory |
-| `ppf_manager` | `ppf123` | PPF studio only |
-
-**Do not use these in production.** Use `db:auth-bootstrap` with strong passwords instead.
+This is disabled in production builds when Supabase is configured. **Never use demo mode in production.**
 
 ## Features
 
@@ -106,5 +99,7 @@ npm run db:crosscheck
 
 **Also add env vars to Vercel** for production deployment.
 
-Schema migrations live in `supabase/migrations/`.
+Schema migrations live in `supabase/migrations/`. After pulling security updates, apply `009_harden_rls.sql` in the Supabase SQL Editor.
+
+See [SECURITY.md](./SECURITY.md) for credential handling and rotation.
 
