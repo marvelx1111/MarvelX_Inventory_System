@@ -57,6 +57,20 @@ function DataReadyGate({ children }: { children: React.ReactNode }) {
   return children;
 }
 
+function AdminRoute() {
+  const { isAuthenticated, isAdmin } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
+}
+
 function ProtectedRoute({ module }: { module?: PermissionModule }) {
   const { isAuthenticated, hasPermission } = useAuth();
 
@@ -121,7 +135,7 @@ export default function App() {
             <Route path="investors" element={<InvestorsPage />} />
           </Route>
 
-          <Route element={<ProtectedRoute module="finance" />}>
+          <Route element={<AdminRoute />}>
             <Route path="finance" element={<FinancePage />} />
           </Route>
 

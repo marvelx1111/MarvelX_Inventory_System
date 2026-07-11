@@ -15,7 +15,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { user, hasPermission, logout, isAdmin, canEdit } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
-  const visibleItems = NAV_ITEMS.filter((item) => hasPermission(item.module));
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (item.module === 'finance') {
+      return isAdmin || hasPermission('finance');
+    }
+    return hasPermission(item.module);
+  });
 
   return (
     <motion.aside

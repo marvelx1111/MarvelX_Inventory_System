@@ -189,8 +189,28 @@ class DataStore {
       }
     }
 
+    const permissions = [...data.permissions];
+    if (!permissions.some((permission) => permission.module === 'finance')) {
+      permissions.push({
+        permission_id: 'perm_011',
+        permission_name: 'View Finance',
+        module: 'finance',
+      });
+    }
+
+    const rolePermissions = [...data.rolePermissions];
+    if (
+      !rolePermissions.some(
+        (entry) => entry.role_id === 'rol_001' && entry.permission_id === 'perm_011',
+      )
+    ) {
+      rolePermissions.push({ role_id: 'rol_001', permission_id: 'perm_011' });
+    }
+
     this.data = {
       ...data,
+      permissions,
+      rolePermissions,
       expenseCategories,
       financeSettings: resolveFinanceSettings(data.financeSettings),
       sales: data.sales.map((sale) => {
