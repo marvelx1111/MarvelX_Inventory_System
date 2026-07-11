@@ -41,7 +41,19 @@ AUTH_PASSWORD_PPF=choose-a-strong-password-min-12-chars
 npm run db:auth-bootstrap
 ```
 
-3. Sign in at `/login` with email (e.g. `admin@marvelx.pk`) and the password you set above.
+3. Sign in at `/login` with email and the password you set above.
+
+### Portal sign-in (Supabase Auth)
+
+Use **email** (not username) on the login page:
+
+| Portal | Email | Default password |
+|--------|-------|------------------|
+| Admin | `admin@marvelx.pk` | Value of `AUTH_PASSWORD_ADMIN` in `.env.local` |
+| Sales | `sales@marvelx.pk` | `sales123` |
+| PPF Manager | `ppf@marvelx.pk` | `ppf123` |
+
+Passwords are hashed by Supabase Auth — they are never stored in plain text in the database. Rotate weak defaults after first login.
 
 ### Local demo mode (development only)
 

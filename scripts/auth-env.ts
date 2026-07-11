@@ -8,8 +8,10 @@ export function getTestAuthCredentials() {
   const adminPassword = merged.AUTH_PASSWORD_ADMIN ?? '';
   const salesEmail = merged.AUTH_SALES_EMAIL ?? 'sales@marvelx.pk';
   const salesPassword = merged.AUTH_PASSWORD_SALES ?? '';
+  const ppfEmail = merged.AUTH_PPF_EMAIL ?? 'ppf@marvelx.pk';
+  const ppfPassword = merged.AUTH_PASSWORD_PPF ?? '';
 
-  return { adminEmail, adminPassword, salesEmail, salesPassword };
+  return { adminEmail, adminPassword, salesEmail, salesPassword, ppfEmail, ppfPassword };
 }
 
 export function requireAdminTestCredentials() {
