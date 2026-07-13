@@ -49,7 +49,7 @@ export function createSeedData(): AppData {
       {
         user_id: 'usr_001',
         role_id: 'rol_001',
-        full_name: 'Admin',
+        full_name: 'Talha',
         username: 'admin',
         email: 'admin@marvelx.pk',
         phone: '',

@@ -69,7 +69,7 @@ async function main() {
   try {
     await login(page, adminEmail, adminPassword);
 
-    const demoBanner = await page.getByText(/Demo mode|Database connection failed/i).count();
+    const demoBanner = await page.getByText(/Database not configured|Database connection failed/i).count();
     results.push({
       label: 'Supabase connected (no demo banner)',
       ok: demoBanner === 0,

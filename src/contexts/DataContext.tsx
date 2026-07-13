@@ -65,11 +65,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       await testSupabaseConnection(client);
       const data = await fetchAllFromSupabase(client);
-      if (data.roles.length === 0 && data.vehicles.length === 0) {
-        setSource('local');
-        setStatus('ready');
-        return;
-      }
       store.hydrate(data);
       setSource('supabase');
       setStatus('ready');

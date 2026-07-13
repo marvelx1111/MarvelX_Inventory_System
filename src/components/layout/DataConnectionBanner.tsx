@@ -6,9 +6,9 @@ export function DataConnectionBanner() {
   if (status === 'loading' || source === 'supabase') return null;
 
   const isError = status === 'error';
-  const title = isError ? 'Database connection failed' : 'Demo mode — changes will not be saved';
+  const title = isError ? 'Database connection failed' : 'Database not configured';
   const message = isError
-    ? `${error ?? 'Could not reach Supabase'}. Showing local demo data; edits are temporary.`
+    ? `${error ?? 'Could not reach Supabase'}. Sign in again or check your connection. Changes are not saved until the database is reachable.`
     : 'Supabase is not configured on this deployment. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.';
 
   return (
