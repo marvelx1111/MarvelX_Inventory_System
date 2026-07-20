@@ -13,7 +13,6 @@ export const RECEIPT_SHEET_CSS = `
   --ink: #111;
   --label-bg: #e6e6e6;
   --red: #e10600;
-  position: relative;
   width: 210mm;
   min-width: 210mm;
   max-width: 210mm;
@@ -21,7 +20,7 @@ export const RECEIPT_SHEET_CSS = `
   min-height: 297mm;
   max-height: 297mm;
   margin: 0 auto;
-  padding: 5.5mm 9mm 11mm;
+  padding: 5.5mm 9mm 0;
   overflow: hidden;
   background: #fff !important;
   color: var(--ink) !important;
@@ -227,7 +226,7 @@ export const RECEIPT_SHEET_CSS = `
   text-transform: uppercase;
   color: #444 !important;
 }
-/* Compact gap after note ≈ 1.5 table rows — do NOT use margin-top:auto */
+/* Compact gap after note ≈ 1 table row — footer + red bar follow immediately */
 .mx-receipt-note {
   margin: 3px 0 0;
   font-size: 8.5px;
@@ -244,13 +243,13 @@ export const RECEIPT_SHEET_CSS = `
   font-weight: 400;
 }
 .mx-receipt-footer {
-  margin-top: 5px; /* ~1.5 table-row gap after important note */
+  margin-top: 3px;
   padding-top: 0;
   padding-bottom: 0;
 }
 .mx-receipt-footer-rule {
   border-top: 1px solid #000;
-  padding-top: 3px;
+  padding-top: 2px;
   padding-bottom: 2px;
 }
 .mx-receipt-contacts {
@@ -289,15 +288,12 @@ export const RECEIPT_SHEET_CSS = `
   user-select: none;
   flex-shrink: 0;
 }
-/* Red letterhead bar pinned to absolute bottom of A4 page */
+/* Red bar sits directly under contact row (not pinned to page bottom) */
 .mx-receipt-redbar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 8px;
-  margin: 0;
+  display: block;
+  width: calc(100% + 18mm);
+  margin: 2px -9mm 0;
+  height: 7px;
   background: #e10600 !important;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
@@ -322,7 +318,7 @@ export const RECEIPT_SHEET_CSS = `
     min-height: 297mm !important;
     max-height: 297mm !important;
     margin: 0 !important;
-    padding: 5.5mm 9mm 11mm !important;
+    padding: 5.5mm 9mm 0 !important;
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
@@ -330,12 +326,10 @@ export const RECEIPT_SHEET_CSS = `
     transform: none !important;
   }
   .mx-receipt-redbar {
-    position: absolute !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    height: 8px !important;
+    position: static !important;
+    width: calc(100% + 18mm) !important;
+    margin: 2px -9mm 0 !important;
+    height: 7px !important;
     background: #e10600 !important;
   }
 }
