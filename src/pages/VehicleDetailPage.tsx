@@ -3,17 +3,20 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { EditableCard } from '@/components/ui/EditableCard';
 import { EditRecordModal } from '@/components/ui/EditRecordModal';
+import { VehicleSaleReceipt } from '@/components/sales/VehicleSaleReceipt';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { VEHICLE_EDIT_FIELDS } from '@/config/edit-fields';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
+import { usePrint } from '@/hooks/usePrint';
 import type { BiometricStatus, VehicleDocument, VehicleStatus } from '@/types';
 import { BIOMETRIC_OPTIONS, BIOMETRIC_STATUS_CONFIG, VEHICLE_STATUS_CONFIG, formatPaymentMethod } from '@/utils/constants';
 import { formatCNIC, formatDate, formatPKR, cn } from '@/utils/format';
@@ -49,8 +52,10 @@ export function VehicleDetailPage() {
   const loading = usePageLoading();
   const { user } = useAuth();
   const { success, error } = useToast();
+  const { print } = usePrint();
   const [refreshKey, setRefreshKey] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const details = id ? store.getVehicleWithDetails(id) : null;
@@ -171,21 +176,52 @@ export function VehicleDetailPage() {
     );
   }
 
-  const { vehicle, purchase, seller, document, sale, buyer } = details;
+  const { vehicle, purchase, seller, document: vehicleDocument, sale, buyer } = details;
   const statusCfg = VEHICLE_STATUS_CONFIG[vehicle.status];
-  const completedDocs = document
-    ? DOCUMENT_CHECKLIST.filter((d) => document[d.key]).length
+  const completedDocs = vehicleDocument
+    ? DOCUMENT_CHECKLIST.filter((d) => vehicleDocument[d.key]).length
     : 0;
+
+  const receiptProps = {
+    receiptNo: sale?.sale_id ?? purchase?.purchase_id ?? vehicle.stock_number,
+    date: sale?.sale_date ?? purchase?.purchase_date ?? vehicle.purchase_date,
+    vehicle,
+    buyer: sale ? buyer : null,
+    seller,
+    document: vehicleDocument,
+    authorizedName: sale?.salesperson || user?.full_name || 'Marvel X',
+    amountReceived: sale ? sale.advance : (purchase?.purchase_price ?? vehicle.purchase_price),
+    salePrice: sale ? sale.sale_price : (purchase?.purchase_price ?? vehicle.purchase_price),
+    balance: sale ? sale.balance : 0,
+    paymentMethod: sale?.payment_method ?? purchase?.payment_method ?? null,
+  };
+
+  const handlePrintReceipt = () => {
+    document.body.classList.add('printing-sale-receipt');
+    const cleanup = () => {
+      document.body.classList.remove('printing-sale-receipt');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    print(`Receipt ${receiptProps.receiptNo}`);
+    window.setTimeout(cleanup, 2000);
+  };
 
   return (
     <PageTransition>
       <PageHeader
         title={`${vehicle.make} ${vehicle.model}`}
         subtitle={`${vehicle.stock_number} · ${vehicle.variant} · ${vehicle.model_year}`}
+        printable={false}
         actions={
-          <Link to="/inventory">
-            <Button variant="secondary">Back to inventory</Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={() => setReceiptOpen(true)}>
+              Print receipt
+            </Button>
+            <Link to="/inventory">
+              <Button variant="secondary">Back to inventory</Button>
+            </Link>
+          </div>
         }
       />
 
@@ -260,7 +296,7 @@ export function VehicleDetailPage() {
                 {completedDocs} of {DOCUMENT_CHECKLIST.length} items received
               </p>
             </div>
-            {document && (
+            {vehicleDocument && (
               <div className="h-2 w-24 overflow-hidden rounded-full bg-[var(--bg-tertiary)]">
                 <motion.div
                   className="h-full rounded-full bg-accent"
@@ -272,10 +308,10 @@ export function VehicleDetailPage() {
             )}
           </CardHeader>
           <CardContent>
-            {document ? (
+            {vehicleDocument ? (
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 {DOCUMENT_CHECKLIST.map((item) => {
-                  const checked = document[item.key];
+                  const checked = vehicleDocument[item.key];
                   return (
                     <button
                       key={item.key}
@@ -311,7 +347,7 @@ export function VehicleDetailPage() {
               <p className="text-sm text-[var(--text-tertiary)]">No document record</p>
             )}
 
-            {document && (
+            {vehicleDocument && (
               <div className="mt-4 flex flex-col gap-3 border-t border-[var(--border-secondary)] pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
@@ -321,22 +357,22 @@ export function VehicleDetailPage() {
                     <span
                       className={cn(
                         'h-2 w-2 rounded-full',
-                        BIOMETRIC_STATUS_CONFIG[document.biometric_status].dotColor,
+                        BIOMETRIC_STATUS_CONFIG[vehicleDocument.biometric_status].dotColor,
                       )}
                     />
                     <span
                       className={cn(
                         'text-sm font-medium',
-                        BIOMETRIC_STATUS_CONFIG[document.biometric_status].color,
+                        BIOMETRIC_STATUS_CONFIG[vehicleDocument.biometric_status].color,
                       )}
                     >
-                      {BIOMETRIC_STATUS_CONFIG[document.biometric_status].label}
+                      {BIOMETRIC_STATUS_CONFIG[vehicleDocument.biometric_status].label}
                     </span>
                   </div>
                 </div>
                 <div className="no-print w-full sm:w-64">
                   <Select
-                    value={document.biometric_status}
+                    value={vehicleDocument.biometric_status}
                     onChange={(e) => handleBiometricChange(e.target.value as BiometricStatus)}
                     options={BIOMETRIC_OPTIONS}
                   />
@@ -419,6 +455,39 @@ export function VehicleDetailPage() {
         onSave={handleSaveVehicle}
         saving={saving}
       />
+
+      <div className="sale-receipt-print-root" aria-hidden={!receiptOpen}>
+        <VehicleSaleReceipt {...receiptProps} />
+      </div>
+
+      <Modal
+        open={receiptOpen}
+        onClose={() => setReceiptOpen(false)}
+        title="Vehicle sale & purchase receipt"
+        description={
+          sale
+            ? 'Letterhead receipt with seller, buyer, vehicle, and payment from this sale.'
+            : 'Letterhead receipt for this purchase. Buyer fields fill in after the vehicle is sold.'
+        }
+        size="xl"
+        className="max-h-[90vh] overflow-hidden"
+        footer={
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setReceiptOpen(false)}>
+              Close
+            </Button>
+            <Button type="button" onClick={handlePrintReceipt}>
+              Print / Save PDF
+            </Button>
+          </div>
+        }
+      >
+        <div className="max-h-[70vh] overflow-auto bg-zinc-100 p-3">
+          <div className="origin-top scale-[0.85] sm:scale-90">
+            <VehicleSaleReceipt {...receiptProps} />
+          </div>
+        </div>
+      </Modal>
     </PageTransition>
   );
 }

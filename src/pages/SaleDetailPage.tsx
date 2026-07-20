@@ -3,17 +3,20 @@ import { Link, useParams } from 'react-router-dom';
 import { EditableCard } from '@/components/ui/EditableCard';
 import { EditRecordModal } from '@/components/ui/EditRecordModal';
 import { VehicleCostBreakdown } from '@/components/sales/VehicleCostBreakdown';
+import { VehicleSaleReceipt } from '@/components/sales/VehicleSaleReceipt';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 import { DELIVERY_EDIT_FIELDS, SALE_EDIT_FIELDS } from '@/config/edit-fields';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
+import { usePrint } from '@/hooks/usePrint';
 import type { PaymentMethod } from '@/types';
 import { formatPaymentMethod } from '@/utils/constants';
 import { formatCNIC, formatDate, formatPKR, parseMoneyInput } from '@/utils/format';
@@ -26,9 +29,11 @@ export function SaleDetailPage() {
   const loading = usePageLoading();
   const { user } = useAuth();
   const { success, error } = useToast();
+  const { print } = usePrint();
   const [refreshKey, setRefreshKey] = useState(0);
   const [editSaleOpen, setEditSaleOpen] = useState(false);
   const [editDeliveryOpen, setEditDeliveryOpen] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [paymentInput, setPaymentInput] = useState('');
   const [recordingPayment, setRecordingPayment] = useState(false);
@@ -43,6 +48,9 @@ export function SaleDetailPage() {
   const acquisition = vehicle ? store.getPurchaseById(vehicle.purchase_id) : undefined;
   const acquisitionSeller = acquisition
     ? store.getCustomerById(acquisition.seller_customer_id)
+    : undefined;
+  const vehicleDocument = vehicle
+    ? store.getVehicleDocuments().find((d) => d.vehicle_id === vehicle.vehicle_id)
     : undefined;
 
   const financials = useMemo(() => {
@@ -141,6 +149,19 @@ export function SaleDetailPage() {
     }
   };
 
+  const handlePrintReceipt = () => {
+    if (!sale || !vehicle || !customer) return;
+    document.body.classList.add('printing-sale-receipt');
+    const cleanup = () => {
+      document.body.classList.remove('printing-sale-receipt');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    print(`Sale receipt ${sale.sale_id}`);
+    // Fallback if afterprint never fires (some browsers)
+    window.setTimeout(cleanup, 2000);
+  };
+
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sale) return;
@@ -215,10 +236,18 @@ export function SaleDetailPage() {
       <PageHeader
         title={`Sale ${sale.sale_id}`}
         subtitle={vehicle ? `${vehicle.make} ${vehicle.model} · ${vehicle.stock_number}` : undefined}
+        printable={false}
         actions={
-          <Link to="/sales">
-            <Button variant="secondary">Back to sales</Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            {vehicle && customer ? (
+              <Button type="button" onClick={() => setReceiptOpen(true)}>
+                Print sale receipt
+              </Button>
+            ) : null}
+            <Link to="/sales">
+              <Button variant="secondary">Back to sales</Button>
+            </Link>
+          </div>
         }
       />
 
@@ -440,6 +469,63 @@ export function SaleDetailPage() {
         onSave={handleSaveDelivery}
         saving={saving}
       />
+
+      {vehicle && customer ? (
+        <>
+          <div className="sale-receipt-print-root" aria-hidden={!receiptOpen}>
+            <VehicleSaleReceipt
+              receiptNo={sale.sale_id}
+              date={sale.sale_date}
+              vehicle={vehicle}
+              buyer={customer}
+              seller={acquisitionSeller}
+              document={vehicleDocument}
+              authorizedName={sale.salesperson || user?.full_name || 'Marvel X'}
+              amountReceived={paymentReceived}
+              salePrice={sellingPrice}
+              balance={remainingBalance}
+              paymentMethod={sale.payment_method}
+            />
+          </div>
+
+          <Modal
+            open={receiptOpen}
+            onClose={() => setReceiptOpen(false)}
+            title="Vehicle sale receipt"
+            description="Preview the letterhead receipt, then print or save as PDF."
+            size="xl"
+            className="max-h-[90vh] overflow-hidden"
+            footer={
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button type="button" variant="secondary" onClick={() => setReceiptOpen(false)}>
+                  Close
+                </Button>
+                <Button type="button" onClick={handlePrintReceipt}>
+                  Print / Save PDF
+                </Button>
+              </div>
+            }
+          >
+            <div className="max-h-[70vh] overflow-auto bg-zinc-100 p-3">
+              <div className="origin-top scale-[0.85] sm:scale-90">
+                <VehicleSaleReceipt
+                  receiptNo={sale.sale_id}
+                  date={sale.sale_date}
+                  vehicle={vehicle}
+                  buyer={customer}
+                  seller={acquisitionSeller}
+                  document={vehicleDocument}
+                  authorizedName={sale.salesperson || user?.full_name || 'Marvel X'}
+                  amountReceived={paymentReceived}
+                  salePrice={sellingPrice}
+                  balance={remainingBalance}
+                  paymentMethod={sale.payment_method}
+                />
+              </div>
+            </div>
+          </Modal>
+        </>
+      ) : null}
     </PageTransition>
   );
 }

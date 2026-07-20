@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Marvel X — Vehicle Sale & Purchase Receipt (Sample)</title>
+<style>
+  :root { --ink:#1a1a1a; --muted:#4b5563; --red:#e10600; --logo-gray:#4b5563; }
+  * { box-sizing: border-box; }
+  body { margin:0; color:var(--ink); background:#fff; font-family:'Segoe UI',Helvetica,Arial,sans-serif; font-size:10.5px; line-height:1.35; }
+  .sheet { width:210mm; min-height:297mm; margin:0 auto; background:#fff; display:flex; flex-direction:column; padding:12mm 14mm 0; }
+  .letterhead { text-align:center; padding-bottom:8px; border-bottom:2.5px solid #000; }
+  .brand { display:inline-flex; align-items:baseline; gap:1px; }
+  .brand-marvel { font-size:34px; font-weight:800; font-style:italic; color:var(--logo-gray); line-height:1; }
+  .brand-x { font-size:42px; font-weight:900; font-style:italic; color:var(--red); line-height:.85; transform:skewX(-8deg); }
+  .title-row { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-top:10px; margin-bottom:8px; }
+  .doc-title { margin:0; font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; }
+  .meta { display:grid; grid-template-columns:auto 1fr; gap:4px 8px; min-width:210px; font-size:10px; }
+  .meta label { color:var(--muted); white-space:nowrap; }
+  .val { border-bottom:1px solid #000; min-height:14px; font-weight:600; padding:0 2px 1px; }
+  .section { margin-top:8px; }
+  .section-title { margin:0 0 5px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid #000; padding-bottom:2px; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; }
+  .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px 10px; }
+  .grid-4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px 10px; }
+  .field { display:grid; grid-template-columns:auto 1fr; gap:4px 6px; align-items:end; min-height:18px; }
+  .field.stack { grid-template-columns:1fr; gap:2px; }
+  .field label { color:var(--muted); white-space:nowrap; font-size:9.5px; }
+  .cnic { display:flex; gap:3px; align-items:center; font-weight:700; letter-spacing:1px; }
+  .cnic .box { width:12px; height:15px; border:1px solid #000; display:flex; align-items:center; justify-content:center; font-size:9px; }
+  .cnic .dash { width:8px; border-bottom:1px solid #000; margin-bottom:2px; }
+  .legal { margin-top:8px; padding:7px 8px; border:1px solid #000; font-size:9.5px; text-align:justify; }
+  .signs { display:grid; grid-template-columns:1fr 1.15fr 1fr; gap:8px; margin-top:8px; }
+  .sign-col { border:1px solid #000; padding:6px 7px; min-height:168px; display:flex; flex-direction:column; }
+  .sign-col h4 { margin:0 0 6px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; text-align:center; border-bottom:1px solid #d4d4d8; padding-bottom:3px; }
+  .sign-block { display:grid; gap:5px; margin-bottom:6px; }
+  .thumb-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .stamp-box { border:1px dashed #666; height:36px; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:8.5px; }
+  .ack { font-size:8.8px; text-align:justify; margin:0 0 6px; flex:1; }
+  .showroom-box { margin-top:auto; border:1.5px solid #000; height:42px; display:flex; align-items:flex-end; justify-content:center; padding-bottom:4px; font-weight:700; font-size:9px; letter-spacing:.05em; text-transform:uppercase; }
+  .witness { margin-top:auto; padding-top:5px; border-top:1px solid #d4d4d8; }
+  .witness h5 { margin:0 0 4px; font-size:8.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+  .note { margin-top:7px; font-size:9.5px; font-weight:600; border:1px solid #000; padding:5px 7px; background:#fafafa; }
+  .footer { margin-top:auto; padding-top:8px; }
+  .footer-rule { border-top:2px solid #000; padding-top:8px; }
+  .contacts { display:grid; grid-template-columns:1fr 1.2fr 1fr; gap:10px; padding-bottom:10px; }
+  .contact { display:grid; grid-template-columns:22px 1fr; gap:6px; }
+  .icon { width:20px; height:20px; border-radius:50%; background:#6b7280; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; }
+  .contact strong { display:block; font-size:9px; margin-bottom:1px; }
+  .contact span { display:block; font-size:9px; }
+  .red-bar { height:10px; background:var(--red); margin:0 -14mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .sig-script { font-family:Georgia, 'Times New Roman', serif; font-style:italic; font-size:13px; font-weight:600; color:#1e3a5f; }
+</style>
+</head>
+<body>
+<article class="sheet">
+  <header class="letterhead">
+    <div class="brand"><span class="brand-marvel">MARVEL</span><span class="brand-x">X</span></div>
+  </header>
+
+  <div class="title-row">
+    <h1 class="doc-title">Vehicle Sale &amp; Purchase Receipt</h1>
+    <div class="meta">
+      <label>Receipt No.</label><div class="val">MX-SR-0079</div>
+      <label>Date</label><div class="val">20 July 2026</div>
+      <label>Day</label><div class="val">Monday</div>
+      <label>Time</label><div class="val">03:45 PM</div>
+    </div>
+  </div>
+
+  <section class="section">
+    <h2 class="section-title">1. Seller details</h2>
+    <div class="grid-2">
+      <div class="field"><label>Full name</label><div class="val">Muhammad Imran</div></div>
+      <div class="field"><label>Son / daughter of</label><div class="val">Abdul Razzaq</div></div>
+      <div class="field"><label>Phone</label><div class="val">0300-4567890</div></div>
+      <div class="field stack"><label>CNIC</label>
+        <div class="cnic">
+          <span class="box">3</span><span class="box">5</span><span class="box">2</span><span class="box">0</span><span class="box">2</span>
+          <span class="dash"></span>
+          <span class="box">1</span><span class="box">2</span><span class="box">3</span><span class="box">4</span><span class="box">5</span><span class="box">6</span><span class="box">7</span>
+          <span class="dash"></span>
+          <span class="box">1</span>
+        </div>
+      </div>
+    </div>
+    <div class="field" style="margin-top:6px"><label>Permanent address</label><div class="val">House 12, Street 7, Model Town, Lahore</div></div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">2. Vehicle details</h2>
+    <div class="grid-3">
+      <div class="field"><label>Registration No.</label><div class="val">LEB-21-4567</div></div>
+      <div class="field"><label>Chassis No.</label><div class="val">NZE121-0123456</div></div>
+      <div class="field"><label>Engine No.</label><div class="val">1NZ-9876543</div></div>
+      <div class="field"><label>Make</label><div class="val">Toyota</div></div>
+      <div class="field"><label>Model</label><div class="val">Corolla Gli</div></div>
+      <div class="field"><label>Horsepower</label><div class="val">1300 CC</div></div>
+      <div class="field"><label>Color</label><div class="val">White</div></div>
+      <div class="field"><label>Quota</label><div class="val">Lahore</div></div>
+      <div class="field"><label>Post office</label><div class="val">Johar Town</div></div>
+    </div>
+    <div class="grid-4" style="margin-top:6px">
+      <div class="field"><label>Original registration book</label><div class="val">Yes</div></div>
+      <div class="field"><label>Original file</label><div class="val">Yes</div></div>
+      <div class="field"><label>Total file pages</label><div class="val">24</div></div>
+      <div class="field"><label>Computerized number plate</label><div class="val">Yes</div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">3. Buyer details</h2>
+    <div class="grid-2">
+      <div class="field"><label>Full name</label><div class="val">Ahmed Raza</div></div>
+      <div class="field"><label>Son / daughter of</label><div class="val">Tariq Mehmood</div></div>
+      <div class="field"><label>Phone</label><div class="val">0321-9876543</div></div>
+      <div class="field stack"><label>CNIC</label>
+        <div class="cnic">
+          <span class="box">3</span><span class="box">5</span><span class="box">2</span><span class="box">0</span><span class="box">2</span>
+          <span class="dash"></span>
+          <span class="box">7</span><span class="box">6</span><span class="box">5</span><span class="box">4</span><span class="box">3</span><span class="box">2</span><span class="box">1</span>
+          <span class="dash"></span>
+          <span class="box">9</span>
+        </div>
+      </div>
+    </div>
+    <div class="field" style="margin-top:6px"><label>Permanent address</label><div class="val">Flat 4-B, Gulberg III, Lahore</div></div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">4. Payment</h2>
+    <div class="grid-2">
+      <div class="field"><label>Amount received (cash / cheque advance)</label><div class="val">Rs 2,850,000 (Cash)</div></div>
+      <div class="field"><label>Amount in words</label><div class="val">Twenty-eight lac fifty thousand only</div></div>
+    </div>
+  </section>
+
+  <div class="legal">
+    <strong>Seller’s declaration:</strong>
+    I confirm that I have sold the above vehicle with complete documents. As of this date, the vehicle is free from theft claims, unpaid installments, court cases, and other legal disputes. If any such issue arises relating to the period before this sale, the <strong>seller</strong> shall be solely responsible — <strong>not Marvel X showroom</strong>. I sign this receipt of my own free will, in full consciousness, and in the presence of witnesses.
+  </div>
+
+  <section class="signs">
+    <div class="sign-col">
+      <h4>Seller</h4>
+      <div class="sign-block">
+        <div class="field stack"><label>Signature</label><div class="val sig-script">M. Imran</div></div>
+        <div class="thumb-row">
+          <div class="field stack"><label>Thumb impression</label><div class="stamp-box">✓ Affixed</div></div>
+          <div class="field stack"><label>Revenue stamp</label><div class="stamp-box">✓ Affixed</div></div>
+        </div>
+      </div>
+      <div class="witness">
+        <h5>Witness (seller)</h5>
+        <div class="field"><label>Name</label><div class="val">Bilal Hussain</div></div>
+        <div class="field"><label>S/O / D/O</label><div class="val">Ghulam Hussain</div></div>
+        <div class="field"><label>Address</label><div class="val">Township, Lahore</div></div>
+        <div class="field"><label>Phone</label><div class="val">0333-1112233</div></div>
+        <div class="field"><label>Signature</label><div class="val sig-script">B. Hussain</div></div>
+      </div>
+    </div>
+
+    <div class="sign-col">
+      <h4>Buyer acknowledgment</h4>
+      <p class="ack">I confirm that I have inspected the vehicle, received the original documents (file, registration book, and transfer papers), and am satisfied with their condition. From this point forward, responsibility for the vehicle is mine.</p>
+      <div class="field stack"><label>Buyer signature</label><div class="val sig-script">Ahmed Raza</div></div>
+      <div class="field stack" style="margin-top:6px"><label>Authorized signature</label><div class="val sig-script">Talha — Marvel X</div></div>
+      <div class="showroom-box">Showroom</div>
+    </div>
+
+    <div class="sign-col">
+      <h4>Buyer</h4>
+      <div class="sign-block">
+        <div class="field stack"><label>Signature</label><div class="val sig-script">Ahmed Raza</div></div>
+        <div class="thumb-row">
+          <div class="field stack"><label>Thumb impression</label><div class="stamp-box">✓ Affixed</div></div>
+          <div class="field stack"><label>Revenue stamp</label><div class="stamp-box">✓ Affixed</div></div>
+        </div>
+      </div>
+      <div class="witness">
+        <h5>Witness (buyer)</h5>
+        <div class="field"><label>Name</label><div class="val">Usman Ali</div></div>
+        <div class="field"><label>S/O / D/O</label><div class="val">Asghar Ali</div></div>
+        <div class="field"><label>Address</label><div class="val">DHA Phase 5, Lahore</div></div>
+        <div class="field"><label>Phone</label><div class="val">0345-7788990</div></div>
+        <div class="field"><label>Signature</label><div class="val sig-script">U. Ali</div></div>
+      </div>
+    </div>
+  </section>
+
+  <p class="note">Note: The buyer must transfer the vehicle into their own name within <strong>15 days</strong>. After that, the showroom will not be responsible.</p>
+
+  <footer class="footer">
+    <div class="footer-rule">
+      <div class="contacts">
+        <div class="contact"><div class="icon">☎</div><div><strong>Call to find out more</strong><span>+92 307 7766300</span></div></div>
+        <div class="contact"><div class="icon">◎</div><div><strong>More info</strong><span>www.marvelx.com.pk</span><span>marvelxpk@gmail.com</span></div></div>
+        <div class="contact"><div class="icon">📍</div><div><strong>Address</strong><span>435/G-4 Block, Johar Town, Lahore.</span></div></div>
+      </div>
+    </div>
+    <div class="red-bar"></div>
+  </footer>
+</article>
+</body>
+</html>

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Marvel X — Vehicle Sale &amp; Purchase Receipt</title>
+    <style>
+      :root {
+        --ink: #1a1a1a;
+        --muted: #4b5563;
+        --line: #111;
+        --soft: #d4d4d8;
+        --red: #e10600;
+        --logo-gray: #4b5563;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      @page {
+        size: A4;
+        margin: 10mm 12mm 12mm;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: #e5e7eb;
+        font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+        font-size: 10.5px;
+        line-height: 1.35;
+      }
+
+      .sheet {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 16px auto;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        padding: 14mm 14mm 0;
+        position: relative;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      }
+
+      /* ── Letterhead ── */
+      .letterhead {
+        text-align: center;
+        padding-bottom: 8px;
+        border-bottom: 2.5px solid #000;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 1px;
+        letter-spacing: -0.5px;
+      }
+
+      .brand-marvel {
+        font-size: 34px;
+        font-weight: 800;
+        font-style: italic;
+        color: var(--logo-gray);
+        line-height: 1;
+      }
+
+      .brand-x {
+        font-size: 42px;
+        font-weight: 900;
+        font-style: italic;
+        color: var(--red);
+        line-height: 0.85;
+        transform: skewX(-8deg);
+      }
+
+      /* ── Title strip ── */
+      .title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 12px;
+        margin-top: 10px;
+        margin-bottom: 8px;
+      }
+
+      .doc-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .meta {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 4px 8px;
+        min-width: 210px;
+        font-size: 10px;
+      }
+
+      .meta label {
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .line {
+        border-bottom: 1px solid #000;
+        min-height: 14px;
+      }
+
+      /* ── Sections ── */
+      .section {
+        margin-top: 8px;
+      }
+
+      .section-title {
+        margin: 0 0 5px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--ink);
+        border-bottom: 1px solid #000;
+        padding-bottom: 2px;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 16px;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 6px 10px;
+      }
+
+      .grid-4 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        gap: 6px 10px;
+      }
+
+      .field {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 4px 6px;
+        align-items: end;
+        min-height: 18px;
+      }
+
+      .field.stack {
+        grid-template-columns: 1fr;
+        gap: 2px;
+      }
+
+      .field label {
+        color: var(--muted);
+        white-space: nowrap;
+        font-size: 9.5px;
+      }
+
+      .field .line {
+        width: 100%;
+      }
+
+      .cnic {
+        display: flex;
+        gap: 3px;
+        align-items: center;
+      }
+
+      .cnic .box {
+        width: 11px;
+        height: 14px;
+        border: 1px solid #000;
+      }
+
+      .cnic .dash {
+        width: 8px;
+        border-bottom: 1px solid #000;
+        margin-bottom: 2px;
+      }
+
+      /* ── Legal ── */
+      .legal {
+        margin-top: 8px;
+        padding: 7px 8px;
+        border: 1px solid #000;
+        font-size: 9.5px;
+        text-align: justify;
+      }
+
+      .legal strong {
+        font-weight: 700;
+      }
+
+      /* ── Signatures ── */
+      .signs {
+        display: grid;
+        grid-template-columns: 1fr 1.15fr 1fr;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .sign-col {
+        border: 1px solid #000;
+        padding: 6px 7px;
+        min-height: 168px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sign-col h4 {
+        margin: 0 0 6px;
+        font-size: 9.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        text-align: center;
+        border-bottom: 1px solid var(--soft);
+        padding-bottom: 3px;
+      }
+
+      .sign-block {
+        display: grid;
+        gap: 5px;
+        margin-bottom: 6px;
+      }
+
+      .thumb-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+
+      .stamp-box {
+        border: 1px dashed #666;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-size: 8.5px;
+      }
+
+      .ack {
+        font-size: 8.8px;
+        text-align: justify;
+        margin: 0 0 6px;
+        flex: 1;
+      }
+
+      .showroom-box {
+        margin-top: auto;
+        border: 1.5px solid #000;
+        height: 42px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 4px;
+        font-weight: 700;
+        font-size: 9px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .witness {
+        margin-top: auto;
+        padding-top: 5px;
+        border-top: 1px solid var(--soft);
+      }
+
+      .witness h5 {
+        margin: 0 0 4px;
+        font-size: 8.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      /* ── Note ── */
+      .note {
+        margin-top: 7px;
+        font-size: 9.5px;
+        font-weight: 600;
+        border: 1px solid #000;
+        padding: 5px 7px;
+        background: #fafafa;
+      }
+
+      /* ── Footer letterhead ── */
+      .footer {
+        margin-top: auto;
+        padding-top: 8px;
+      }
+
+      .footer-rule {
+        border-top: 2px solid #000;
+        padding-top: 8px;
+      }
+
+      .contacts {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr 1fr;
+        gap: 10px;
+        align-items: start;
+        padding-bottom: 10px;
+      }
+
+      .contact {
+        display: grid;
+        grid-template-columns: 22px 1fr;
+        gap: 6px;
+        align-items: start;
+      }
+
+      .icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #6b7280;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        flex-shrink: 0;
+      }
+
+      .contact strong {
+        display: block;
+        font-size: 9px;
+        margin-bottom: 1px;
+      }
+
+      .contact span {
+        display: block;
+        font-size: 9px;
+        color: var(--ink);
+      }
+
+      .red-bar {
+        height: 10px;
+        background: var(--red);
+        margin: 0 -14mm;
+      }
+
+      .toolbar {
+        max-width: 210mm;
+        margin: 16px auto 0;
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .toolbar button {
+        border: 0;
+        background: #111;
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .toolbar button.secondary {
+        background: #fff;
+        color: #111;
+        border: 1px solid #111;
+      }
+
+      @media print {
+        body {
+          background: #fff;
+        }
+
+        .sheet {
+          margin: 0;
+          box-shadow: none;
+          width: auto;
+          min-height: auto;
+        }
+
+        .toolbar {
+          display: none;
+        }
+
+        .red-bar {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <button class="secondary" type="button" onclick="window.history.back()">Back</button>
+      <button type="button" onclick="window.print()">Print receipt</button>
+    </div>
+
+    <article class="sheet">
+      <header class="letterhead">
+        <div class="brand" aria-label="Marvel X">
+          <span class="brand-marvel">MARVEL</span>
+          <span class="brand-x">X</span>
+        </div>
+      </header>
+
+      <div class="title-row">
+        <h1 class="doc-title">Vehicle Sale &amp; Purchase Receipt</h1>
+        <div class="meta">
+          <label>Receipt No.</label>
+          <div class="line"></div>
+          <label>Date</label>
+          <div class="line"></div>
+          <label>Day</label>
+          <div class="line"></div>
+          <label>Time</label>
+          <div class="line"></div>
+        </div>
+      </div>
+
+      <section class="section">
+        <h2 class="section-title">1. Seller details</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label>Full name</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Son / daughter of</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Phone</label>
+            <div class="line"></div>
+          </div>
+          <div class="field stack">
+            <label>CNIC</label>
+            <div class="cnic" aria-label="CNIC boxes">
+              <span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span>
+              <span class="dash"></span>
+              <span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span>
+              <span class="dash"></span>
+              <span class="box"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field" style="margin-top: 6px">
+          <label>Permanent address</label>
+          <div class="line"></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">2. Vehicle details</h2>
+        <div class="grid-3">
+          <div class="field">
+            <label>Registration No.</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Chassis No.</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Engine No.</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Make</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Model</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Horsepower</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Color</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Quota</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Post office</label>
+            <div class="line"></div>
+          </div>
+        </div>
+        <div class="grid-4" style="margin-top: 6px">
+          <div class="field">
+            <label>Original registration book</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Original file</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Total file pages</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Computerized number plate</label>
+            <div class="line"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">3. Buyer details</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label>Full name</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Son / daughter of</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Phone</label>
+            <div class="line"></div>
+          </div>
+          <div class="field stack">
+            <label>CNIC</label>
+            <div class="cnic" aria-label="CNIC boxes">
+              <span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span>
+              <span class="dash"></span>
+              <span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span>
+              <span class="dash"></span>
+              <span class="box"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field" style="margin-top: 6px">
+          <label>Permanent address</label>
+          <div class="line"></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">4. Payment</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label>Amount received (cash / cheque advance)</label>
+            <div class="line"></div>
+          </div>
+          <div class="field">
+            <label>Amount in words</label>
+            <div class="line"></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="legal">
+        <strong>Seller’s declaration:</strong>
+        I confirm that I have sold the above vehicle with complete documents. As of this date, the
+        vehicle is free from theft claims, unpaid installments, court cases, and other legal disputes.
+        If any such issue arises relating to the period before this sale, the <strong>seller</strong>
+        shall be solely responsible — <strong>not Marvel X showroom</strong>. I sign this receipt of my
+        own free will, in full consciousness, and in the presence of witnesses.
+      </div>
+
+      <section class="signs" aria-label="Signatures and witnesses">
+        <div class="sign-col">
+          <h4>Seller</h4>
+          <div class="sign-block">
+            <div class="field stack">
+              <label>Signature</label>
+              <div class="line"></div>
+            </div>
+            <div class="thumb-row">
+              <div class="field stack">
+                <label>Thumb impression</label>
+                <div class="stamp-box">Thumb</div>
+              </div>
+              <div class="field stack">
+                <label>Revenue stamp</label>
+                <div class="stamp-box">Ticket</div>
+              </div>
+            </div>
+          </div>
+          <div class="witness">
+            <h5>Witness (seller)</h5>
+            <div class="field"><label>Name</label><div class="line"></div></div>
+            <div class="field"><label>S/O / D/O</label><div class="line"></div></div>
+            <div class="field"><label>Address</label><div class="line"></div></div>
+            <div class="field"><label>Phone</label><div class="line"></div></div>
+            <div class="field"><label>Signature</label><div class="line"></div></div>
+          </div>
+        </div>
+
+        <div class="sign-col">
+          <h4>Buyer acknowledgment</h4>
+          <p class="ack">
+            I confirm that I have inspected the vehicle, received the original documents (file,
+            registration book, and transfer papers), and am satisfied with their condition. From this
+            point forward, responsibility for the vehicle is mine.
+          </p>
+          <div class="field stack">
+            <label>Buyer signature</label>
+            <div class="line"></div>
+          </div>
+          <div class="field stack" style="margin-top: 6px">
+            <label>Authorized signature</label>
+            <div class="line"></div>
+          </div>
+          <div class="showroom-box">Showroom</div>
+        </div>
+
+        <div class="sign-col">
+          <h4>Buyer</h4>
+          <div class="sign-block">
+            <div class="field stack">
+              <label>Signature</label>
+              <div class="line"></div>
+            </div>
+            <div class="thumb-row">
+              <div class="field stack">
+                <label>Thumb impression</label>
+                <div class="stamp-box">Thumb</div>
+              </div>
+              <div class="field stack">
+                <label>Revenue stamp</label>
+                <div class="stamp-box">Ticket</div>
+              </div>
+            </div>
+          </div>
+          <div class="witness">
+            <h5>Witness (buyer)</h5>
+            <div class="field"><label>Name</label><div class="line"></div></div>
+            <div class="field"><label>S/O / D/O</label><div class="line"></div></div>
+            <div class="field"><label>Address</label><div class="line"></div></div>
+            <div class="field"><label>Phone</label><div class="line"></div></div>
+            <div class="field"><label>Signature</label><div class="line"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <p class="note">
+        Note: The buyer must transfer the vehicle into their own name within
+        <strong>15 days</strong>. After that, the showroom will not be responsible.
+      </p>
+
+      <footer class="footer">
+        <div class="footer-rule">
+          <div class="contacts">
+            <div class="contact">
+              <div class="icon" aria-hidden="true">☎</div>
+              <div>
+                <strong>Call to find out more</strong>
+                <span>+92 307 7766300</span>
+              </div>
+            </div>
+            <div class="contact">
+              <div class="icon" aria-hidden="true">◎</div>
+              <div>
+                <strong>More info</strong>
+                <span>www.marvelx.com.pk</span>
+                <span>marvelxpk@gmail.com</span>
+              </div>
+            </div>
+            <div class="contact">
+              <div class="icon" aria-hidden="true">📍</div>
+              <div>
+                <strong>Address</strong>
+                <span>435/G-4 Block, Johar Town, Lahore.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="red-bar" aria-hidden="true"></div>
+      </footer>
+    </article>
+  </body>
+</html>

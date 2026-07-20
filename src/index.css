@@ -185,4 +185,43 @@ body {
   a[href]::after {
     content: none !important;
   }
+
+  /* Sale receipt: print only the letterhead form (works inside PageTransition) */
+  body.printing-sale-receipt aside,
+  body.printing-sale-receipt header,
+  body.printing-sale-receipt nav,
+  body.printing-sale-receipt [data-print-hide],
+  body.printing-sale-receipt .no-print,
+  body.printing-sale-receipt [role='dialog'],
+  body.printing-sale-receipt [role='alertdialog'] {
+    display: none !important;
+  }
+
+  body.printing-sale-receipt main * {
+    visibility: hidden;
+  }
+
+  body.printing-sale-receipt .sale-receipt-print-root,
+  body.printing-sale-receipt .sale-receipt-print-root * {
+    visibility: visible !important;
+  }
+
+  body.printing-sale-receipt .sale-receipt-print-root {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  body.printing-sale-receipt .sale-receipt-sheet {
+    width: 100% !important;
+    min-height: auto !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Screen: keep print-only receipt out of the layout */
+.sale-receipt-print-root {
+  display: none;
 }
