@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { EditableCard } from '@/components/ui/EditableCard';
 import { EditRecordModal } from '@/components/ui/EditRecordModal';
@@ -16,10 +16,10 @@ import { VEHICLE_EDIT_FIELDS } from '@/config/edit-fields';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
-import { usePrint } from '@/hooks/usePrint';
 import type { BiometricStatus, VehicleDocument, VehicleStatus } from '@/types';
 import { BIOMETRIC_OPTIONS, BIOMETRIC_STATUS_CONFIG, VEHICLE_STATUS_CONFIG, formatPaymentMethod } from '@/utils/constants';
 import { formatCNIC, formatDate, formatPKR, cn } from '@/utils/format';
+import { printHtmlFragment } from '@/utils/print-receipt';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
 
@@ -52,7 +52,7 @@ export function VehicleDetailPage() {
   const loading = usePageLoading();
   const { user } = useAuth();
   const { success, error } = useToast();
-  const { print } = usePrint();
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -197,14 +197,17 @@ export function VehicleDetailPage() {
   };
 
   const handlePrintReceipt = () => {
-    document.body.classList.add('printing-sale-receipt');
-    const cleanup = () => {
-      document.body.classList.remove('printing-sale-receipt');
-      window.removeEventListener('afterprint', cleanup);
-    };
-    window.addEventListener('afterprint', cleanup);
-    print(`Receipt ${receiptProps.receiptNo}`);
-    window.setTimeout(cleanup, 2000);
+    const sheet = receiptRef.current?.querySelector('.sale-receipt-sheet');
+    const html = sheet?.outerHTML ?? receiptRef.current?.innerHTML;
+    if (!html) {
+      error('Print failed', 'Could not prepare the receipt for printing.');
+      return;
+    }
+    setReceiptOpen(false);
+    document.body.style.overflow = '';
+    window.setTimeout(() => {
+      printHtmlFragment(html, `Receipt ${receiptProps.receiptNo}`);
+    }, 150);
   };
 
   return (
@@ -456,7 +459,7 @@ export function VehicleDetailPage() {
         saving={saving}
       />
 
-      <div className="sale-receipt-print-root" aria-hidden={!receiptOpen}>
+      <div ref={receiptRef} className="sale-receipt-print-root" aria-hidden="true">
         <VehicleSaleReceipt {...receiptProps} />
       </div>
 

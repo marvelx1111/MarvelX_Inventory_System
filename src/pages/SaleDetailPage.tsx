@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { EditableCard } from '@/components/ui/EditableCard';
 import { EditRecordModal } from '@/components/ui/EditRecordModal';
@@ -16,10 +16,10 @@ import { DELIVERY_EDIT_FIELDS, SALE_EDIT_FIELDS } from '@/config/edit-fields';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { store } from '@/data/store';
-import { usePrint } from '@/hooks/usePrint';
 import type { PaymentMethod } from '@/types';
 import { formatPaymentMethod } from '@/utils/constants';
 import { formatCNIC, formatDate, formatPKR, parseMoneyInput } from '@/utils/format';
+import { printHtmlFragment } from '@/utils/print-receipt';
 import { computeSaleFinancials } from '@/utils/sale';
 import { PageTransition } from './PageTransition';
 import { usePageLoading } from './hooks/usePageLoading';
@@ -29,7 +29,7 @@ export function SaleDetailPage() {
   const loading = usePageLoading();
   const { user } = useAuth();
   const { success, error } = useToast();
-  const { print } = usePrint();
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [editSaleOpen, setEditSaleOpen] = useState(false);
   const [editDeliveryOpen, setEditDeliveryOpen] = useState(false);
@@ -151,15 +151,18 @@ export function SaleDetailPage() {
 
   const handlePrintReceipt = () => {
     if (!sale || !vehicle || !customer) return;
-    document.body.classList.add('printing-sale-receipt');
-    const cleanup = () => {
-      document.body.classList.remove('printing-sale-receipt');
-      window.removeEventListener('afterprint', cleanup);
-    };
-    window.addEventListener('afterprint', cleanup);
-    print(`Sale receipt ${sale.sale_id}`);
-    // Fallback if afterprint never fires (some browsers)
-    window.setTimeout(cleanup, 2000);
+    const sheet = receiptRef.current?.querySelector('.sale-receipt-sheet');
+    const html = sheet?.outerHTML ?? receiptRef.current?.innerHTML;
+    if (!html) {
+      error('Print failed', 'Could not prepare the receipt for printing.');
+      return;
+    }
+    // Close modal first so body overflow unlocks and the portal stays interactive
+    setReceiptOpen(false);
+    document.body.style.overflow = '';
+    window.setTimeout(() => {
+      printHtmlFragment(html, `Sale receipt ${sale.sale_id}`);
+    }, 150);
   };
 
   const handleRecordPayment = async (e: React.FormEvent) => {
@@ -472,7 +475,7 @@ export function SaleDetailPage() {
 
       {vehicle && customer ? (
         <>
-          <div className="sale-receipt-print-root" aria-hidden={!receiptOpen}>
+          <div ref={receiptRef} className="sale-receipt-print-root" aria-hidden="true">
             <VehicleSaleReceipt
               receiptNo={sale.sale_id}
               date={sale.sale_date}
