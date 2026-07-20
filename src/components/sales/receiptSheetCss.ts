@@ -6,8 +6,10 @@ export const RECEIPT_SHEET_CSS = `
   --label-bg: #e6e6e6;
   --red: #e10600;
   width: 210mm;
-  max-width: 100%;
-  min-height: auto;
+  min-width: 210mm;
+  max-width: 210mm;
+  height: 297mm;
+  min-height: 297mm;
   max-height: 297mm;
   margin: 0 auto;
   padding: 6mm 9mm 4mm;
@@ -276,22 +278,31 @@ export const RECEIPT_SHEET_CSS = `
   flex-shrink: 0;
 }
 @media print {
-  @page { size: A4 portrait; margin: 0; }
+  @page {
+    size: 210mm 297mm;
+    margin: 0;
+  }
   html, body {
-    width: 210mm;
-    height: 297mm;
+    width: 210mm !important;
+    height: 297mm !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: hidden !important;
   }
   .mx-receipt {
     width: 210mm !important;
+    min-width: 210mm !important;
+    max-width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
     max-height: 297mm !important;
     margin: 0 !important;
     padding: 6mm 9mm 4mm !important;
+    page-break-after: avoid !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     box-shadow: none !important;
+    transform: none !important;
   }
 }
 `.trim();

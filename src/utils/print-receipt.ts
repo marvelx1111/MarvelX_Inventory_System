@@ -1,7 +1,6 @@
 /**
- * Print an HTML fragment in an isolated iframe.
- * Receipt HTML must include its own <style> block (see VehicleSaleReceipt)
- * so the PDF matches the on-screen preview without relying on app Tailwind.
+ * Print an HTML fragment in an isolated iframe at exact A4 size
+ * (210mm × 297mm) so Save as PDF matches a physical A4 page.
  */
 
 import { RECEIPT_SHEET_CSS } from '@/components/sales/receiptSheetCss';
@@ -17,15 +16,17 @@ export function printHtmlFragment(html: string, title: string): void {
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
   iframe.setAttribute('title', title);
+  // Real A4 layout box (off-screen) — zero-size iframes print at wrong scale
   Object.assign(iframe.style, {
     position: 'fixed',
-    right: '0',
-    bottom: '0',
-    width: '0',
-    height: '0',
+    left: '0',
+    top: '0',
+    width: '210mm',
+    height: '297mm',
     border: '0',
     opacity: '0',
     pointerEvents: 'none',
+    zIndex: '-1',
   });
   document.body.appendChild(iframe);
 
@@ -37,7 +38,6 @@ export function printHtmlFragment(html: string, title: string): void {
     return;
   }
 
-  // Ensure styles exist even if the cloned node somehow omitted <style>
   const hasEmbeddedStyle = /<style[\s>]/i.test(html);
   const styleBlock = hasEmbeddedStyle
     ? ''
@@ -50,12 +50,15 @@ export function printHtmlFragment(html: string, title: string): void {
   <meta charset="utf-8" />
   <title>${escapeTitle(title)}</title>
   <style>
-    @page { size: A4 portrait; margin: 0; }
+    @page {
+      size: 210mm 297mm;
+      margin: 0;
+    }
     html, body {
       margin: 0 !important;
       padding: 0 !important;
-      width: 210mm;
-      height: 297mm;
+      width: 210mm !important;
+      height: 297mm !important;
       overflow: hidden !important;
       background: #fff !important;
       color: #111 !important;
@@ -88,7 +91,6 @@ export function printHtmlFragment(html: string, title: string): void {
   win.addEventListener('afterprint', cleanup);
   window.addEventListener('focus', onFocusCleanup);
 
-  // Give the browser a beat to layout tables + colors before opening the dialog
   window.setTimeout(() => {
     try {
       win.focus();
@@ -98,5 +100,5 @@ export function printHtmlFragment(html: string, title: string): void {
       return;
     }
     window.setTimeout(cleanup, 120_000);
-  }, 400);
+  }, 450);
 }
