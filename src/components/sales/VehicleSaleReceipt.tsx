@@ -89,28 +89,30 @@ function SignBlock({
 }) {
   return (
     <td>
-      <h4>{title}</h4>
-      {children}
-      {!children && <div className="mx-receipt-sig-line" />}
-      {name !== undefined && (
-        <div className="mx-receipt-sign-row">
-          <span className="k">Name:</span>
-          <span>{name || ''}</span>
+      <h4 className="mx-receipt-sign-head">{title}</h4>
+      <div className="mx-receipt-sign-body">
+        {children}
+        {!children && <div className="mx-receipt-sig-line" />}
+        {name !== undefined && (
+          <div className="mx-receipt-sign-row">
+            <span className="k">Name:</span>
+            <span>{name || ''}</span>
+          </div>
+        )}
+        {cnic !== undefined && (
+          <div className="mx-receipt-sign-row">
+            <span className="k">CNIC:</span>
+            <span>{cnic || ''}</span>
+          </div>
+        )}
+        <div className="mx-receipt-sign-row" style={{ marginTop: 4 }}>
+          <span className="k">Witness Name:</span>
+          <span />
         </div>
-      )}
-      {cnic !== undefined && (
         <div className="mx-receipt-sign-row">
           <span className="k">CNIC:</span>
-          <span>{cnic || ''}</span>
+          <span />
         </div>
-      )}
-      <div className="mx-receipt-sign-row" style={{ marginTop: 6 }}>
-        <span className="k">Witness Name:</span>
-        <span />
-      </div>
-      <div className="mx-receipt-sign-row">
-        <span className="k">CNIC:</span>
-        <span />
       </div>
     </td>
   );
@@ -279,20 +281,22 @@ export function VehicleSaleReceipt({
                 cnic={seller?.cnic ? formatCNIC(seller.cnic) : ''}
               />
               <td>
-                <h4>Buyer Acknowledgment (With Showroom)</h4>
-                <p className="mx-receipt-ack">
-                  I confirm that I have inspected the vehicle and received the original documents.
-                  The vehicle is purchased on an &lsquo;as-is, where-is&rsquo; basis. No claims,
-                  complaints, or warranties will be accepted after the date of purchase.
-                </p>
-                <div className="mx-receipt-stamp">Showroom Stamp</div>
-                <div className="mx-receipt-sign-row">
-                  <span className="k">Witness Name:</span>
-                  <span />
-                </div>
-                <div className="mx-receipt-sign-row">
-                  <span className="k">CNIC:</span>
-                  <span />
+                <h4 className="mx-receipt-sign-head">Buyer Acknowledgment (With Showroom)</h4>
+                <div className="mx-receipt-sign-body">
+                  <p className="mx-receipt-ack">
+                    I confirm that I have inspected the vehicle and received the original documents.
+                    The vehicle is purchased on an &lsquo;as-is, where-is&rsquo; basis. No claims,
+                    complaints, or warranties will be accepted after the date of purchase.
+                  </p>
+                  <div className="mx-receipt-stamp">Showroom Stamp</div>
+                  <div className="mx-receipt-sign-row">
+                    <span className="k">Witness Name:</span>
+                    <span />
+                  </div>
+                  <div className="mx-receipt-sign-row">
+                    <span className="k">CNIC:</span>
+                    <span />
+                  </div>
                 </div>
               </td>
               <SignBlock
@@ -306,8 +310,12 @@ export function VehicleSaleReceipt({
       </section>
 
       <p className="mx-receipt-note">
-        <strong>7. Important Note:</strong> It is the responsibility of the buyer to transfer the
-        ownership of the above vehicle within 15 days from the date of purchase.
+        <strong>7. Important Note</strong>
+        <span className="mx-receipt-note-text">
+          {' '}
+          It is the responsibility of the buyer to transfer the ownership of the above vehicle within
+          15 days from the date of purchase.
+        </span>
       </p>
 
       <footer className="mx-receipt-footer">
