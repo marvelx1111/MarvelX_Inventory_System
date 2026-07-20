@@ -1,10 +1,19 @@
-/** Dense A4 one-page receipt — matches Marvel X sample shading, logo, and spacing. */
+/**
+ * Marvel X sale receipt — A4 (210×297mm), one page.
+ * Requirements from sample:
+ * - Grey shaded label cells + signature headers
+ * - Bold section titles / labels / meta values
+ * - Compact gap (~1.5 table rows) after Important Note → footer
+ * - Red letterhead bar at absolute page bottom
+ * - Print-safe colors (print-color-adjust)
+ */
 export const RECEIPT_SHEET_CSS = `
 .mx-receipt, .mx-receipt * { box-sizing: border-box; }
 .mx-receipt {
   --ink: #111;
   --label-bg: #e6e6e6;
   --red: #e10600;
+  position: relative;
   width: 210mm;
   min-width: 210mm;
   max-width: 210mm;
@@ -12,15 +21,14 @@ export const RECEIPT_SHEET_CSS = `
   min-height: 297mm;
   max-height: 297mm;
   margin: 0 auto;
-  padding: 6mm 9mm 4mm;
+  padding: 5.5mm 9mm 11mm;
   overflow: hidden;
   background: #fff !important;
   color: var(--ink) !important;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 9px;
-  line-height: 1.22;
-  display: flex;
-  flex-direction: column;
+  line-height: 1.2;
+  display: block;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
 }
@@ -36,7 +44,7 @@ export const RECEIPT_SHEET_CSS = `
   letter-spacing: -0.8px;
 }
 .mx-receipt-brand-marvel {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
   font-style: italic;
   color: #525252 !important;
@@ -45,7 +53,7 @@ export const RECEIPT_SHEET_CSS = `
 }
 .mx-receipt-brand-x {
   display: inline-block;
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 900;
   font-style: italic;
   color: var(--red) !important;
@@ -100,7 +108,7 @@ export const RECEIPT_SHEET_CSS = `
   font-weight: 700;
 }
 .mx-receipt-section {
-  margin-top: 3.5px;
+  margin-top: 3px;
 }
 .mx-receipt-section-title {
   margin: 0 0 1.5px;
@@ -121,7 +129,7 @@ export const RECEIPT_SHEET_CSS = `
   vertical-align: middle;
   font-size: 9px;
   color: var(--ink) !important;
-  height: 14px;
+  height: 13.5px;
 }
 .mx-receipt-table .lbl,
 .mx-receipt-table .lbl-wide {
@@ -143,10 +151,10 @@ export const RECEIPT_SHEET_CSS = `
 .mx-receipt-table .val-wide { width: 78%; }
 .mx-receipt-legal {
   margin: 0;
-  padding: 3.5px 5px;
+  padding: 3px 5px;
   border: 1px solid #000;
-  font-size: 7.8px;
-  line-height: 1.28;
+  font-size: 7.6px;
+  line-height: 1.25;
   text-align: justify;
   font-weight: 400;
   color: var(--ink) !important;
@@ -162,13 +170,13 @@ export const RECEIPT_SHEET_CSS = `
   padding: 0;
   vertical-align: top;
   width: 33.33%;
-  height: 100px;
+  height: 96px;
   background: #fff !important;
   color: var(--ink) !important;
 }
 .mx-receipt-sign-head {
   margin: 0;
-  padding: 3px 4px;
+  padding: 2.5px 4px;
   font-size: 8.5px;
   font-weight: 700;
   text-transform: uppercase;
@@ -181,34 +189,34 @@ export const RECEIPT_SHEET_CSS = `
   print-color-adjust: exact !important;
 }
 .mx-receipt-sign-body {
-  padding: 4px 5px 3px;
+  padding: 3px 5px 2px;
 }
 .mx-receipt-ack {
-  margin: 0 0 3px;
-  font-size: 6.6px;
-  line-height: 1.2;
+  margin: 0 0 2px;
+  font-size: 6.5px;
+  line-height: 1.18;
   text-align: justify;
   font-weight: 400;
   color: var(--ink) !important;
 }
 .mx-receipt-sig-line {
   border-bottom: 1px solid #000;
-  height: 18px;
-  margin: 2px 0 4px;
+  height: 16px;
+  margin: 2px 0 3px;
 }
 .mx-receipt-sign-row {
   display: grid;
   grid-template-columns: 62px 1fr;
   gap: 2px;
-  margin-bottom: 1.5px;
+  margin-bottom: 1px;
   font-size: 8px;
   min-height: 10px;
 }
 .mx-receipt-sign-row .k { font-weight: 700; }
 .mx-receipt-stamp {
-  margin: 3px auto 5px;
+  margin: 2px auto 4px;
   width: 90%;
-  height: 34px;
+  height: 32px;
   border: 1.5px dashed #555;
   display: flex;
   align-items: center;
@@ -219,6 +227,7 @@ export const RECEIPT_SHEET_CSS = `
   text-transform: uppercase;
   color: #444 !important;
 }
+/* Compact gap after note ≈ 1.5 table rows — do NOT use margin-top:auto */
 .mx-receipt-note {
   margin: 3px 0 0;
   font-size: 8.5px;
@@ -235,13 +244,14 @@ export const RECEIPT_SHEET_CSS = `
   font-weight: 400;
 }
 .mx-receipt-footer {
-  margin-top: auto;
-  padding-top: 4px;
+  margin-top: 5px; /* ~1.5 table-row gap after important note */
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .mx-receipt-footer-rule {
   border-top: 1px solid #000;
   padding-top: 3px;
-  padding-bottom: 4px;
+  padding-bottom: 2px;
 }
 .mx-receipt-contacts {
   display: flex;
@@ -279,11 +289,15 @@ export const RECEIPT_SHEET_CSS = `
   user-select: none;
   flex-shrink: 0;
 }
+/* Red letterhead bar pinned to absolute bottom of A4 page */
 .mx-receipt-redbar {
-  display: block;
-  width: calc(100% + 18mm);
-  margin: 0 -9mm -4mm;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
   height: 8px;
+  margin: 0;
   background: #e10600 !important;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
@@ -308,12 +322,21 @@ export const RECEIPT_SHEET_CSS = `
     min-height: 297mm !important;
     max-height: 297mm !important;
     margin: 0 !important;
-    padding: 6mm 9mm 4mm !important;
+    padding: 5.5mm 9mm 11mm !important;
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     box-shadow: none !important;
     transform: none !important;
+  }
+  .mx-receipt-redbar {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 8px !important;
+    background: #e10600 !important;
   }
 }
 `.trim();
