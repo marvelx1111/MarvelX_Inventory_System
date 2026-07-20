@@ -50,10 +50,13 @@ export function printHtmlFragment(html: string, title: string): void {
   <meta charset="utf-8" />
   <title>${escapeTitle(title)}</title>
   <style>
-    @page { size: A4; margin: 8mm; }
+    @page { size: A4 portrait; margin: 0; }
     html, body {
-      margin: 0;
-      padding: 0;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 210mm;
+      height: 297mm;
+      overflow: hidden !important;
       background: #fff !important;
       color: #111 !important;
       -webkit-print-color-adjust: exact !important;
