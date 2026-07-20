@@ -149,6 +149,13 @@ export const RECEIPT_SHEET_CSS = `
   text-align: center;
   color: #111 !important;
 }
+.mx-receipt-ack {
+  margin: 0 0 6px;
+  font-size: 8.2px;
+  line-height: 1.3;
+  text-align: justify;
+  color: #111 !important;
+}
 .mx-receipt-sig-line {
   border-bottom: 1px solid #000;
   min-height: 28px;

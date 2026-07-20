@@ -256,6 +256,14 @@ export function VehicleSaleReceipt({
 
           <div className="mx-receipt-sign-col">
             <h4>Buyer Acknowledgment (With Showroom)</h4>
+            <p className="mx-receipt-ack">
+              I confirm that I have inspected the vehicle, received the original documents (file,
+              registration book, and transfer papers), and am satisfied with their condition. From
+              this point forward, responsibility for the vehicle is mine. The vehicle has been
+              purchased on an &lsquo;as-is, where-is&rsquo; basis. The buyer has inspected and
+              accepted the vehicle in its current condition. No claims, complaints, or warranties of
+              any kind will be accepted after the date of purchase.
+            </p>
             <div className="mx-receipt-stamp">Showroom Stamp</div>
             <div className="mx-receipt-sign-row" style={{ marginTop: 'auto' }}>
               <span className="k">Witness:</span>
