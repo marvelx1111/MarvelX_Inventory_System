@@ -242,7 +242,10 @@ export function VehicleSaleReceipt({
             <p className="mb-1.5 flex-1 text-justify text-[8.8px]">
               I confirm that I have inspected the vehicle, received the original documents (file,
               registration book, and transfer papers), and am satisfied with their condition. From
-              this point forward, responsibility for the vehicle is mine.
+              this point forward, responsibility for the vehicle is mine. The vehicle has been
+              purchased on an &lsquo;as-is, where-is&rsquo; basis. The buyer has inspected and
+              accepted the vehicle in its current condition. No claims, complaints, or warranties of
+              any kind will be accepted after the date of purchase.
             </p>
             <Field label="Buyer signature" value="" />
             <div className="mt-1.5">
