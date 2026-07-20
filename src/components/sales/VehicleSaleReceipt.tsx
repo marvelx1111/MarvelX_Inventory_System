@@ -230,8 +230,8 @@ export function VehicleSaleReceipt({
               <PairRow
                 leftLabel="Computerized Plate"
                 leftValue=""
-                rightLabel="Stock No."
-                rightValue={vehicle.stock_number}
+                rightLabel="File Pages"
+                rightValue=""
               />
             </tbody>
           </table>

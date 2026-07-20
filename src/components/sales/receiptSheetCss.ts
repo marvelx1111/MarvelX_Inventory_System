@@ -96,26 +96,27 @@ export const RECEIPT_SHEET_CSS = `
 }
 .mx-receipt-meta td:first-child {
   width: 72px;
-  font-weight: 400;
+  font-weight: 700;
   white-space: nowrap;
 }
 .mx-receipt-meta td:nth-child(2) {
   width: 8px;
-  font-weight: 400;
+  font-weight: 700;
   padding: 0 4px 0 0;
 }
 .mx-receipt-meta td:last-child {
   font-weight: 700;
 }
 
-/* Body sections share leftover A4 height evenly — keeps proportions */
+/* Body sections: compact, even gaps — no vertical stretch */
 .mx-receipt-main {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 0;
+  justify-content: flex-start;
+  gap: 3.5px;
+  padding-top: 2px;
 }
 .mx-receipt-section {
   margin-top: 0;
@@ -136,7 +137,7 @@ export const RECEIPT_SHEET_CSS = `
 }
 .mx-receipt-table td {
   border: 1px solid #000;
-  padding: 2.5px 5px;
+  padding: 3px 5px;
   vertical-align: middle;
   font-size: 9px;
   color: var(--ink) !important;
@@ -181,7 +182,7 @@ export const RECEIPT_SHEET_CSS = `
   padding: 0;
   vertical-align: top;
   width: 33.33%;
-  height: 102px;
+  height: 110px;
   background: #fff !important;
   color: var(--ink) !important;
 }
@@ -239,13 +240,13 @@ export const RECEIPT_SHEET_CSS = `
   color: #444 !important;
 }
 
-/* Closing block: note → footer → red bar (tight, no stretch gap) */
+/* Closing block: note → footer → red bar (tight, sits after section 6) */
 .mx-receipt-closing {
   flex: 0 0 auto;
-  margin-top: 3px;
+  margin-top: 3.5px;
 }
 .mx-receipt-note {
-  margin: 0;
+  margin: 0 0 0;
   font-size: 8.5px;
   color: var(--ink) !important;
   background: transparent !important;
