@@ -113,14 +113,51 @@ export function VehicleSaleReceipt({
 
   return (
     <article className="sale-receipt-sheet mx-auto flex min-h-[297mm] w-[210mm] max-w-full flex-col bg-white px-8 pb-0 pt-6 text-[10.5px] leading-snug text-zinc-900 print:px-0 print:pt-0">
-      <header className="border-b-[2.5px] border-black pb-2 text-center">
-        <div className="inline-flex items-baseline gap-px" aria-label="Marvel X">
-          <span className="text-[34px] font-extrabold italic leading-none tracking-tight text-zinc-600">
+      <header
+        className="mx-receipt-letterhead border-b-[2.5px] border-black pb-2 text-center"
+        style={{
+          textAlign: 'center',
+          paddingBottom: 8,
+          borderBottom: '2.5px solid #000',
+        }}
+      >
+        <div
+          className="mx-brand"
+          aria-label="Marvel X"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'baseline',
+            gap: 1,
+            letterSpacing: '-0.5px',
+          }}
+        >
+          <span
+            className="mx-brand-marvel"
+            style={{
+              fontSize: 34,
+              fontWeight: 800,
+              fontStyle: 'italic',
+              color: '#4b5563',
+              lineHeight: 1,
+              fontFamily: 'Arial Black, Arial, Helvetica, sans-serif',
+            }}
+          >
             MARVEL
           </span>
           <span
-            className="text-[42px] font-black italic leading-none text-[#e10600]"
-            style={{ transform: 'skewX(-8deg)' }}
+            className="mx-brand-x"
+            style={{
+              display: 'inline-block',
+              fontSize: 42,
+              fontWeight: 900,
+              fontStyle: 'italic',
+              color: '#e10600',
+              lineHeight: 0.85,
+              transform: 'skewX(-8deg)',
+              fontFamily: 'Arial Black, Arial, Helvetica, sans-serif',
+              WebkitPrintColorAdjust: 'exact',
+              printColorAdjust: 'exact',
+            }}
           >
             X
           </span>
@@ -325,7 +362,11 @@ export function VehicleSaleReceipt({
             </div>
           </div>
         </div>
-        <div className="mx-[-2rem] h-2.5 bg-[#e10600] print:mx-0" aria-hidden="true" />
+        <div
+          className="mx-receipt-redbar mx-[-2rem] h-2.5 print:mx-0"
+          style={{ backgroundColor: '#e10600', height: '10px' }}
+          aria-hidden="true"
+        />
       </footer>
     </article>
   );
