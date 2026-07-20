@@ -173,194 +173,199 @@ export function VehicleSaleReceipt({
         </table>
       </div>
 
-      <section className="mx-receipt-section">
-        <h2 className="mx-receipt-section-title">1. Seller Details</h2>
-        <table className="mx-receipt-table">
-          <tbody>
-            <DetailRow label="Name" value={seller?.full_name} />
-            <DetailRow label="S/O" value={personSo(seller)} />
-            <DetailRow label="Phone" value={seller?.mobile} />
-            <DetailRow label="CNIC" value={seller?.cnic ? formatCNIC(seller.cnic) : ''} />
-            <DetailRow label="Address" value={personAddress(seller)} />
-          </tbody>
-        </table>
-      </section>
+      <div className="mx-receipt-main">
+        <section className="mx-receipt-section">
+          <h2 className="mx-receipt-section-title">1. Seller Details</h2>
+          <table className="mx-receipt-table">
+            <tbody>
+              <DetailRow label="Name" value={seller?.full_name} />
+              <DetailRow label="S/O" value={personSo(seller)} />
+              <DetailRow label="Phone" value={seller?.mobile} />
+              <DetailRow label="CNIC" value={seller?.cnic ? formatCNIC(seller.cnic) : ''} />
+              <DetailRow label="Address" value={personAddress(seller)} />
+            </tbody>
+          </table>
+        </section>
 
-      <section className="mx-receipt-section">
-        <h2 className="mx-receipt-section-title">2. Vehicle Details</h2>
-        <table className="mx-receipt-table">
-          <tbody>
-            <PairRow
-              leftLabel="Registration No."
-              leftValue={vehicle.registration_number}
-              rightLabel="Chassis No."
-              rightValue={vehicle.chassis_number}
-            />
-            <PairRow
-              leftLabel="Engine No."
-              leftValue={vehicle.engine_number}
-              rightLabel="Make"
-              rightValue={vehicle.make}
-            />
-            <PairRow
-              leftLabel="Model"
-              leftValue={modelLabel}
-              rightLabel="Engine Capacity"
-              rightValue=""
-            />
-            <PairRow
-              leftLabel="Color"
-              leftValue={vehicle.color}
-              rightLabel="Quota"
-              rightValue={vehicle.registration_city}
-            />
-            <PairRow
-              leftLabel="Post Office"
-              leftValue=""
-              rightLabel="Original Book"
-              rightValue={yesNo(document?.registration_book)}
-            />
-            <PairRow
-              leftLabel="Original File"
-              leftValue={yesNo(document?.original_file)}
-              rightLabel="File Pages"
-              rightValue=""
-            />
-            <PairRow
-              leftLabel="Computerized Plate"
-              leftValue=""
-              rightLabel="Stock No."
-              rightValue={vehicle.stock_number}
-            />
-          </tbody>
-        </table>
-      </section>
-
-      <section className="mx-receipt-section">
-        <h2 className="mx-receipt-section-title">3. Buyer Details</h2>
-        <table className="mx-receipt-table">
-          <tbody>
-            <DetailRow label="Name" value={buyer?.full_name} />
-            <DetailRow label="S/O" value={personSo(buyer)} />
-            <DetailRow label="Phone" value={buyer?.mobile} />
-            <DetailRow label="CNIC" value={buyer?.cnic ? formatCNIC(buyer.cnic) : ''} />
-            <DetailRow label="Address" value={personAddress(buyer)} />
-          </tbody>
-        </table>
-      </section>
-
-      <section className="mx-receipt-section">
-        <h2 className="mx-receipt-section-title">4. Payment Details</h2>
-        <table className="mx-receipt-table">
-          <tbody>
-            <DetailRow label="Amount" value={amountCell} />
-            <DetailRow label="Amount in Words" value={amountToWordsPKR(received)} />
-          </tbody>
-        </table>
-      </section>
-
-      <section className="mx-receipt-section">
-        <h2 className="mx-receipt-section-title">5. Seller Declaration</h2>
-        <div className="mx-receipt-legal">
-          I, the undersigned seller, declare that I am the true and lawful owner of the
-          above-mentioned vehicle. All information provided is correct to the best of my knowledge. I
-          have received the full and final payment as mentioned above. I further declare that the
-          vehicle is free from any legal claims, bank loans, or police reports, and I indemnify the
-          buyer from any previous legal issues.
-        </div>
-      </section>
-
-      <section className="mx-receipt-section" aria-label="Signatures">
-        <h2 className="mx-receipt-section-title">6. Signatures</h2>
-        <table className="mx-receipt-signs">
-          <tbody>
-            <tr>
-              <SignBlock
-                title="Seller"
-                name={seller?.full_name}
-                cnic={seller?.cnic ? formatCNIC(seller.cnic) : ''}
+        <section className="mx-receipt-section">
+          <h2 className="mx-receipt-section-title">2. Vehicle Details</h2>
+          <table className="mx-receipt-table">
+            <tbody>
+              <PairRow
+                leftLabel="Registration No."
+                leftValue={vehicle.registration_number}
+                rightLabel="Chassis No."
+                rightValue={vehicle.chassis_number}
               />
-              <td>
-                <h4 className="mx-receipt-sign-head">Buyer Acknowledgment (With Showroom)</h4>
-                <div className="mx-receipt-sign-body">
-                  <p className="mx-receipt-ack">
-                    I confirm that I have inspected the vehicle and received the original documents.
-                    The vehicle is purchased on an &lsquo;as-is, where-is&rsquo; basis. No claims,
-                    complaints, or warranties will be accepted after the date of purchase.
-                  </p>
-                  <div className="mx-receipt-stamp">Showroom Stamp</div>
-                  <div className="mx-receipt-sign-row">
-                    <span className="k">Witness Name:</span>
-                    <span />
-                  </div>
-                  <div className="mx-receipt-sign-row">
-                    <span className="k">CNIC:</span>
-                    <span />
-                  </div>
-                </div>
-              </td>
-              <SignBlock
-                title="Buyer"
-                name={buyer?.full_name}
-                cnic={buyer?.cnic ? formatCNIC(buyer.cnic) : ''}
+              <PairRow
+                leftLabel="Engine No."
+                leftValue={vehicle.engine_number}
+                rightLabel="Make"
+                rightValue={vehicle.make}
               />
-            </tr>
-          </tbody>
-        </table>
-      </section>
+              <PairRow
+                leftLabel="Model"
+                leftValue={modelLabel}
+                rightLabel="Engine Capacity"
+                rightValue=""
+              />
+              <PairRow
+                leftLabel="Color"
+                leftValue={vehicle.color}
+                rightLabel="Quota"
+                rightValue={vehicle.registration_city}
+              />
+              <PairRow
+                leftLabel="Post Office"
+                leftValue=""
+                rightLabel="Original Book"
+                rightValue={yesNo(document?.registration_book)}
+              />
+              <PairRow
+                leftLabel="Original File"
+                leftValue={yesNo(document?.original_file)}
+                rightLabel="File Pages"
+                rightValue=""
+              />
+              <PairRow
+                leftLabel="Computerized Plate"
+                leftValue=""
+                rightLabel="Stock No."
+                rightValue={vehicle.stock_number}
+              />
+            </tbody>
+          </table>
+        </section>
 
-      <p className="mx-receipt-note">
-        <strong>7. Important Note</strong>
-        <span className="mx-receipt-note-text">
-          {' '}
-          It is the responsibility of the buyer to transfer the ownership of the above vehicle within
-          15 days from the date of purchase.
-        </span>
-      </p>
+        <section className="mx-receipt-section">
+          <h2 className="mx-receipt-section-title">3. Buyer Details</h2>
+          <table className="mx-receipt-table">
+            <tbody>
+              <DetailRow label="Name" value={buyer?.full_name} />
+              <DetailRow label="S/O" value={personSo(buyer)} />
+              <DetailRow label="Phone" value={buyer?.mobile} />
+              <DetailRow label="CNIC" value={buyer?.cnic ? formatCNIC(buyer.cnic) : ''} />
+              <DetailRow label="Address" value={personAddress(buyer)} />
+            </tbody>
+          </table>
+        </section>
 
-      <footer className="mx-receipt-footer">
-        <div className="mx-receipt-footer-rule">
-          <div className="mx-receipt-contacts">
-            <span className="mx-receipt-contact">
-              <span className="ico" aria-hidden="true">
-                ☎
-              </span>
-              +92 307 7766300
-            </span>
-            <span className="mx-receipt-sep">|</span>
-            <span className="mx-receipt-contact">
-              <span className="ico" aria-hidden="true">
-                ◎
-              </span>
-              www.marvelx.com.pk
-            </span>
-            <span className="mx-receipt-sep">|</span>
-            <span className="mx-receipt-contact">
-              <span className="ico" aria-hidden="true">
-                ✉
-              </span>
-              marvelxpk@gmail.com
-            </span>
-            <span className="mx-receipt-sep">|</span>
-            <span className="mx-receipt-contact">
-              <span className="ico" aria-hidden="true">
-                📍
-              </span>
-              435/G-4 Block Johar Town Lahore
-            </span>
+        <section className="mx-receipt-section">
+          <h2 className="mx-receipt-section-title">4. Payment Details</h2>
+          <table className="mx-receipt-table">
+            <tbody>
+              <DetailRow label="Amount" value={amountCell} />
+              <DetailRow label="Amount in Words" value={amountToWordsPKR(received)} />
+            </tbody>
+          </table>
+        </section>
+
+        <section className="mx-receipt-section">
+          <h2 className="mx-receipt-section-title">5. Seller Declaration</h2>
+          <div className="mx-receipt-legal">
+            I, the undersigned seller, declare that I am the true and lawful owner of the
+            above-mentioned vehicle. All information provided is correct to the best of my knowledge.
+            I have received the full and final payment as mentioned above. I further declare that the
+            vehicle is free from any legal claims, bank loans, or police reports, and I indemnify the
+            buyer from any previous legal issues.
           </div>
-        </div>
-      </footer>
-      <div
-        className="mx-receipt-redbar"
-        style={{
-          backgroundColor: '#e10600',
-          height: '8px',
-          WebkitPrintColorAdjust: 'exact',
-          printColorAdjust: 'exact',
-        }}
-        aria-hidden="true"
-      />
+        </section>
+
+        <section className="mx-receipt-section" aria-label="Signatures">
+          <h2 className="mx-receipt-section-title">6. Signatures</h2>
+          <table className="mx-receipt-signs">
+            <tbody>
+              <tr>
+                <SignBlock
+                  title="Seller"
+                  name={seller?.full_name}
+                  cnic={seller?.cnic ? formatCNIC(seller.cnic) : ''}
+                />
+                <td>
+                  <h4 className="mx-receipt-sign-head">Buyer Acknowledgment (With Showroom)</h4>
+                  <div className="mx-receipt-sign-body">
+                    <p className="mx-receipt-ack">
+                      I confirm that I have inspected the vehicle and received the original
+                      documents. The vehicle is purchased on an &lsquo;as-is, where-is&rsquo; basis.
+                      No claims, complaints, or warranties will be accepted after the date of
+                      purchase.
+                    </p>
+                    <div className="mx-receipt-stamp">Showroom Stamp</div>
+                    <div className="mx-receipt-sign-row">
+                      <span className="k">Witness Name:</span>
+                      <span />
+                    </div>
+                    <div className="mx-receipt-sign-row">
+                      <span className="k">CNIC:</span>
+                      <span />
+                    </div>
+                  </div>
+                </td>
+                <SignBlock
+                  title="Buyer"
+                  name={buyer?.full_name}
+                  cnic={buyer?.cnic ? formatCNIC(buyer.cnic) : ''}
+                />
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      <div className="mx-receipt-closing">
+        <p className="mx-receipt-note">
+          <strong>7. Important Note</strong>
+          <span className="mx-receipt-note-text">
+            {' '}
+            It is the responsibility of the buyer to transfer the ownership of the above vehicle
+            within 15 days from the date of purchase.
+          </span>
+        </p>
+
+        <footer className="mx-receipt-footer">
+          <div className="mx-receipt-footer-rule">
+            <div className="mx-receipt-contacts">
+              <span className="mx-receipt-contact">
+                <span className="ico" aria-hidden="true">
+                  ☎
+                </span>
+                +92 307 7766300
+              </span>
+              <span className="mx-receipt-sep">|</span>
+              <span className="mx-receipt-contact">
+                <span className="ico" aria-hidden="true">
+                  ◎
+                </span>
+                www.marvelx.com.pk
+              </span>
+              <span className="mx-receipt-sep">|</span>
+              <span className="mx-receipt-contact">
+                <span className="ico" aria-hidden="true">
+                  ✉
+                </span>
+                marvelxpk@gmail.com
+              </span>
+              <span className="mx-receipt-sep">|</span>
+              <span className="mx-receipt-contact">
+                <span className="ico" aria-hidden="true">
+                  📍
+                </span>
+                435/G-4 Block Johar Town Lahore
+              </span>
+            </div>
+          </div>
+        </footer>
+        <div
+          className="mx-receipt-redbar"
+          style={{
+            backgroundColor: '#e10600',
+            height: '7px',
+            WebkitPrintColorAdjust: 'exact',
+            printColorAdjust: 'exact',
+          }}
+          aria-hidden="true"
+        />
+      </div>
     </article>
   );
 }

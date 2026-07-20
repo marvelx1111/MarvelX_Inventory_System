@@ -486,7 +486,7 @@ export function VehicleDetailPage() {
         }
       >
         <div className="max-h-[70vh] overflow-auto bg-zinc-100 p-3">
-          <div className="origin-top scale-[0.85] sm:scale-90">
+          <div className="mx-auto w-fit origin-top scale-[0.72] sm:scale-[0.78]">
             <VehicleSaleReceipt {...receiptProps} />
           </div>
         </div>
