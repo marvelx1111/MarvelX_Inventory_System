@@ -19,7 +19,8 @@ export const RECEIPT_SHEET_CSS = `
   font-family: Arial, Helvetica, sans-serif;
   font-size: 9px;
   line-height: 1.22;
-  display: block;
+  display: flex;
+  flex-direction: column;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
 }
@@ -234,12 +235,13 @@ export const RECEIPT_SHEET_CSS = `
   font-weight: 400;
 }
 .mx-receipt-footer {
-  margin-top: 6px;
-  padding-top: 0;
+  margin-top: auto;
+  padding-top: 4px;
 }
 .mx-receipt-footer-rule {
   border-top: 1px solid #000;
   padding-top: 3px;
+  padding-bottom: 4px;
 }
 .mx-receipt-contacts {
   display: flex;
@@ -276,6 +278,15 @@ export const RECEIPT_SHEET_CSS = `
   color: #666;
   user-select: none;
   flex-shrink: 0;
+}
+.mx-receipt-redbar {
+  display: block;
+  width: calc(100% + 18mm);
+  margin: 0 -9mm -4mm;
+  height: 8px;
+  background: #e10600 !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
 @media print {
   @page {

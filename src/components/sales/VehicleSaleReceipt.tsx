@@ -350,6 +350,16 @@ export function VehicleSaleReceipt({
             </span>
           </div>
         </div>
+        <div
+          className="mx-receipt-redbar"
+          style={{
+            backgroundColor: '#e10600',
+            height: '8px',
+            WebkitPrintColorAdjust: 'exact',
+            printColorAdjust: 'exact',
+          }}
+          aria-hidden="true"
+        />
       </footer>
     </article>
   );
