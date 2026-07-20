@@ -21,6 +21,11 @@ import { isQaTestCustomerName } from '@/utils/qa-test-data';
 
 function ensurePersisted(result: PersistResult): void {
   if (!result.ok) throw new Error(result.error);
+  if (!result.persisted) {
+    throw new Error(
+      'Database is not connected. Your change was not saved. Refresh and sign in again.',
+    );
+  }
 }
 import type {
   AppData,
@@ -667,9 +672,23 @@ class DataStore {
     this.data.vehicles.push(vehicle);
     this.data.vehicleDocuments.push(document);
 
-    ensurePersisted(await persistRowInsert('purchases', purchase as unknown as Record<string, unknown>));
-    ensurePersisted(await persistRowInsert('vehicles', vehicle as unknown as Record<string, unknown>));
-    ensurePersisted(await persistRowInsert('vehicle_documents', document as unknown as Record<string, unknown>));
+    try {
+      ensurePersisted(await persistRowInsert('purchases', purchase as unknown as Record<string, unknown>));
+      ensurePersisted(await persistRowInsert('vehicles', vehicle as unknown as Record<string, unknown>));
+      ensurePersisted(
+        await persistRowInsert('vehicle_documents', document as unknown as Record<string, unknown>),
+      );
+    } catch (err) {
+      this.data.purchases = this.data.purchases.filter((p) => p.purchase_id !== purchaseId);
+      this.data.vehicles = this.data.vehicles.filter((v) => v.vehicle_id !== vehicleId);
+      this.data.vehicleDocuments = this.data.vehicleDocuments.filter(
+        (d) => d.document_id !== documentId,
+      );
+      await persistRowDelete('vehicle_documents', 'document_id', documentId);
+      await persistRowDelete('vehicles', 'vehicle_id', vehicleId);
+      await persistRowDelete('purchases', 'purchase_id', purchaseId);
+      throw err;
+    }
 
     this.revision += 1;
     this.notify();
@@ -710,23 +729,31 @@ class DataStore {
       remarks: input.remarks?.trim() ?? '',
     };
 
+    const previousStatus = vehicle.status;
     vehicle.status = isFullyPaid ? 'sold' : 'booked';
 
+    try {
+      ensurePersisted(await persistRowInsert('sales', sale as unknown as Record<string, unknown>));
+      ensurePersisted(
+        await persistRowUpdate('vehicles', 'vehicle_id', vehicle.vehicle_id, { status: vehicle.status }),
+      );
+    } catch (err) {
+      vehicle.status = previousStatus;
+      await persistRowDelete('sales', 'sale_id', sale.sale_id);
+      throw err;
+    }
+
     this.data.sales.push(sale);
-    ensurePersisted(await persistRowInsert('sales', sale as unknown as Record<string, unknown>));
-    ensurePersisted(
-      await persistRowUpdate('vehicles', 'vehicle_id', vehicle.vehicle_id, { status: vehicle.status }),
-    );
     this.revision += 1;
     this.notify();
 
     return sale;
   }
 
-  addSalePayment(
+  async addSalePayment(
     saleId: string,
     payment: Omit<SalePayment, 'payment_id' | 'sale_id'>,
-  ): SalePayment | null {
+  ): Promise<SalePayment | null> {
     const sale = this.data.sales.find((s) => s.sale_id === saleId);
     if (!sale) return null;
 
@@ -734,9 +761,17 @@ class DataStore {
       payment_id: this.nextId('spay'),
       sale_id: saleId,
       ...payment,
+      amount: roundPKR(payment.amount),
     };
 
-    sale.balance = Math.max(0, sale.balance - payment.amount);
+    const previous = {
+      balance: sale.balance,
+      advance: sale.advance,
+      profit: sale.profit,
+      vehicleStatus: this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id)?.status,
+    };
+
+    sale.balance = Math.max(0, sale.balance - record.amount);
     const vehicle = this.data.vehicles.find((v) => v.vehicle_id === sale.vehicle_id);
     const financials = computeSaleFinancials(sale, vehicle?.total_cost ?? 0);
     sale.advance = financials.paymentReceived;
@@ -746,7 +781,35 @@ class DataStore {
       if (vehicle) vehicle.status = 'sold';
     }
 
+    try {
+      ensurePersisted(
+        await persistRowInsert('sale_payments', record as unknown as Record<string, unknown>),
+      );
+      ensurePersisted(
+        await persistRowUpdate('sales', 'sale_id', sale.sale_id, {
+          advance: sale.advance,
+          balance: sale.balance,
+          profit: sale.profit,
+        }),
+      );
+      if (vehicle && vehicle.status !== previous.vehicleStatus) {
+        ensurePersisted(
+          await persistRowUpdate('vehicles', 'vehicle_id', vehicle.vehicle_id, {
+            status: vehicle.status,
+          }),
+        );
+      }
+    } catch (err) {
+      sale.balance = previous.balance;
+      sale.advance = previous.advance;
+      sale.profit = previous.profit;
+      if (vehicle && previous.vehicleStatus) vehicle.status = previous.vehicleStatus;
+      throw err;
+    }
+
     this.data.salePayments.push(record);
+    this.revision += 1;
+    this.notify();
     return record;
   }
 
@@ -757,9 +820,10 @@ class DataStore {
       created_at: new Date().toISOString(),
     };
 
+    ensurePersisted(
+      await persistRowInsert('customers', customer as unknown as Record<string, unknown>),
+    );
     this.data.customers.push(customer);
-    const persist = await persistRowInsert('customers', customer as unknown as Record<string, unknown>);
-    ensurePersisted(persist);
     this.revision += 1;
     this.notify();
     return customer;
@@ -806,10 +870,10 @@ class DataStore {
       amount,
     };
 
-    this.data.showroomExpenses.push(expense);
     ensurePersisted(
       await persistRowInsert('showroom_expenses', expense as unknown as Record<string, unknown>),
     );
+    this.data.showroomExpenses.push(expense);
 
     this.revision += 1;
     this.notify();
@@ -826,6 +890,8 @@ class DataStore {
     this.data.customers[index] = { ...this.data.customers[index], ...updates };
     const customer = this.data.customers[index];
     ensurePersisted(await persistRowUpdate('customers', 'customer_id', customerId, updates));
+    this.revision += 1;
+    this.notify();
     return customer;
   }
 
@@ -949,10 +1015,10 @@ class DataStore {
       join_date: input.join_date,
     };
 
-    this.data.investors.push(investor);
     ensurePersisted(
       await persistRowInsert('investors', investor as unknown as Record<string, unknown>),
     );
+    this.data.investors.push(investor);
     this.revision += 1;
     this.notify();
     return investor;

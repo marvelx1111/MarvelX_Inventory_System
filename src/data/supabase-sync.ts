@@ -4,16 +4,27 @@ export type PersistResult =
   | { ok: true; persisted: boolean }
   | { ok: false; error: string };
 
+function requireClient(): PersistResult | { client: NonNullable<ReturnType<typeof getSupabaseBrowserClient>> } {
+  const client = getSupabaseBrowserClient();
+  if (!client) {
+    return {
+      ok: false,
+      error: 'Database is not connected. Sign in again or check Supabase configuration.',
+    };
+  }
+  return { client };
+}
+
 export async function persistRowUpdate(
   table: string,
   idColumn: string,
   id: string,
   updates: Record<string, unknown>,
 ): Promise<PersistResult> {
-  const client = getSupabaseBrowserClient();
-  if (!client) return { ok: true, persisted: false };
+  const resolved = requireClient();
+  if ('ok' in resolved) return resolved;
 
-  const { error } = await client.from(table).update(updates).eq(idColumn, id);
+  const { error } = await resolved.client.from(table).update(updates).eq(idColumn, id);
   if (error) return { ok: false, error: error.message };
   return { ok: true, persisted: true };
 }
@@ -22,10 +33,10 @@ export async function persistRowInsert(
   table: string,
   row: Record<string, unknown>,
 ): Promise<PersistResult> {
-  const client = getSupabaseBrowserClient();
-  if (!client) return { ok: true, persisted: false };
+  const resolved = requireClient();
+  if ('ok' in resolved) return resolved;
 
-  const { error } = await client.from(table).insert(row);
+  const { error } = await resolved.client.from(table).insert(row);
   if (error) return { ok: false, error: error.message };
   return { ok: true, persisted: true };
 }
@@ -35,10 +46,10 @@ export async function persistRowDelete(
   idColumn: string,
   id: string,
 ): Promise<PersistResult> {
-  const client = getSupabaseBrowserClient();
-  if (!client) return { ok: true, persisted: false };
+  const resolved = requireClient();
+  if ('ok' in resolved) return resolved;
 
-  const { error } = await client.from(table).delete().eq(idColumn, id);
+  const { error } = await resolved.client.from(table).delete().eq(idColumn, id);
   if (error) return { ok: false, error: error.message };
   return { ok: true, persisted: true };
 }
@@ -47,11 +58,11 @@ export async function persistRowsInsert(
   table: string,
   rows: Record<string, unknown>[],
 ): Promise<PersistResult> {
-  const client = getSupabaseBrowserClient();
-  if (!client) return { ok: true, persisted: false };
+  const resolved = requireClient();
+  if ('ok' in resolved) return resolved;
   if (rows.length === 0) return { ok: true, persisted: true };
 
-  const { error } = await client.from(table).insert(rows);
+  const { error } = await resolved.client.from(table).insert(rows);
   if (error) return { ok: false, error: error.message };
   return { ok: true, persisted: true };
 }
@@ -61,10 +72,10 @@ export async function persistRowsDeleteByColumn(
   column: string,
   value: string,
 ): Promise<PersistResult> {
-  const client = getSupabaseBrowserClient();
-  if (!client) return { ok: true, persisted: false };
+  const resolved = requireClient();
+  if ('ok' in resolved) return resolved;
 
-  const { error } = await client.from(table).delete().eq(column, value);
+  const { error } = await resolved.client.from(table).delete().eq(column, value);
   if (error) return { ok: false, error: error.message };
   return { ok: true, persisted: true };
 }
@@ -74,10 +85,10 @@ export async function persistRowUpsert(
   row: Record<string, unknown>,
   onConflict: string,
 ): Promise<PersistResult> {
-  const client = getSupabaseBrowserClient();
-  if (!client) return { ok: true, persisted: false };
+  const resolved = requireClient();
+  if ('ok' in resolved) return resolved;
 
-  const { error } = await client.from(table).upsert(row, { onConflict });
+  const { error } = await resolved.client.from(table).upsert(row, { onConflict });
   if (error) return { ok: false, error: error.message };
   return { ok: true, persisted: true };
 }

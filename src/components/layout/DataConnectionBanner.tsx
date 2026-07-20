@@ -8,7 +8,7 @@ export function DataConnectionBanner() {
   const isError = status === 'error';
   const title = isError ? 'Database connection failed' : 'Database not configured';
   const message = isError
-    ? `${error ?? 'Could not reach Supabase'}. Sign in again or check your connection. Changes are not saved until the database is reachable.`
+    ? `${error ?? 'Could not reach Supabase'}. Data cannot be loaded or saved until the connection is restored.`
     : 'Supabase is not configured on this deployment. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.';
 
   return (

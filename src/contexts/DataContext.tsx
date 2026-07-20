@@ -39,9 +39,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (!isSupabaseConfigured() || isDemoAuthEnabled()) {
+    if (isDemoAuthEnabled()) {
       setSource('local');
       setStatus('ready');
+      setError(null);
+      return;
+    }
+
+    if (!isSupabaseConfigured()) {
+      store.reset();
+      setSource('local');
+      setStatus('error');
+      setError('Supabase is not configured. Changes cannot be saved.');
       return;
     }
 
@@ -56,9 +65,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const client = getSupabaseBrowserClient();
     if (!client) {
+      store.reset();
       setSource('local');
       setStatus('error');
-      setError('Supabase client unavailable.');
+      setError('Supabase client unavailable. Changes cannot be saved.');
       return;
     }
 
@@ -70,6 +80,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setStatus('ready');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load Supabase data';
+      store.reset();
       setError(message);
       setSource('local');
       setStatus('error');
