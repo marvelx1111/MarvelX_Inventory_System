@@ -1,7 +1,7 @@
 /**
  * Marvel X sale receipt — exact A4 portrait (210×297mm).
- * Normal document flow (no flex-grow) so §7 sits tight under the
- * signatures table, matching the letterhead sample. Width locked.
+ * Normal document flow (no flex-grow / no absolute footer) so §7,
+ * contacts, and the red bar stack tightly like the letterhead sample.
  */
 export const RECEIPT_SHEET_CSS = `
 .mx-receipt, .mx-receipt * { box-sizing: border-box; }
@@ -11,7 +11,6 @@ export const RECEIPT_SHEET_CSS = `
   --red: #e10600;
   --page-w: 210mm;
   --page-h: 297mm;
-  position: relative;
   width: var(--page-w);
   min-width: var(--page-w);
   max-width: var(--page-w);
@@ -19,7 +18,7 @@ export const RECEIPT_SHEET_CSS = `
   min-height: var(--page-h);
   max-height: var(--page-h);
   margin: 0 auto;
-  padding: 6mm 10mm 10px;
+  padding: 6mm 10mm 0;
   overflow: hidden;
   background: #fff !important;
   color: var(--ink) !important;
@@ -297,12 +296,8 @@ export const RECEIPT_SHEET_CSS = `
 }
 .mx-receipt-redbar {
   display: block;
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  margin: 0;
+  width: calc(100% + 20mm);
+  margin: 3px -10mm 0;
   height: 7px;
   background: #e10600 !important;
   -webkit-print-color-adjust: exact !important;
@@ -329,7 +324,7 @@ export const RECEIPT_SHEET_CSS = `
     min-height: 297mm !important;
     max-height: 297mm !important;
     margin: 0 !important;
-    padding: 6mm 10mm 10px !important;
+    padding: 6mm 10mm 0 !important;
     zoom: 1 !important;
     transform: none !important;
     page-break-after: avoid !important;
