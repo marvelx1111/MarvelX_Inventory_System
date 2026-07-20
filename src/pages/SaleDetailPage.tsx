@@ -151,7 +151,7 @@ export function SaleDetailPage() {
 
   const handlePrintReceipt = () => {
     if (!sale || !vehicle || !customer) return;
-    const sheet = receiptRef.current?.querySelector('.sale-receipt-sheet');
+    const sheet = receiptRef.current?.querySelector('.mx-receipt, .sale-receipt-sheet');
     const html = sheet?.outerHTML ?? receiptRef.current?.innerHTML;
     if (!html) {
       error('Print failed', 'Could not prepare the receipt for printing.');

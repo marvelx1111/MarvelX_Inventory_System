@@ -1,137 +1,13 @@
 /**
- * Print an HTML fragment in an isolated iframe so the main app
- * never gets stuck in print media / overflow / overlay state.
- *
- * Stylesheets are rewritten to absolute URLs (iframe is about:blank),
- * and critical letterhead CSS is inlined so the Marvel X logo always prints.
+ * Print an HTML fragment in an isolated iframe.
+ * Receipt HTML must include its own <style> block (see VehicleSaleReceipt)
+ * so the PDF matches the on-screen preview without relying on app Tailwind.
  */
 
-function toAbsoluteUrl(url: string): string {
-  try {
-    return new URL(url, window.location.href).href;
-  } catch {
-    return url;
-  }
-}
+import { RECEIPT_SHEET_CSS } from '@/components/sales/receiptSheetCss';
 
-function absolutizeHtmlUrls(html: string): string {
-  return html.replace(
-    /\b(src|href)=["']([^"']+)["']/gi,
-    (_match, attr: string, value: string) => {
-      if (
-        !value ||
-        value.startsWith('data:') ||
-        value.startsWith('blob:') ||
-        value.startsWith('#') ||
-        value.startsWith('mailto:') ||
-        value.startsWith('tel:')
-      ) {
-        return `${attr}="${value}"`;
-      }
-      return `${attr}="${toAbsoluteUrl(value)}"`;
-    },
-  );
-}
-
-function collectStylesheetTags(): string {
-  return Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
-    .map((el) => {
-      const href = el.getAttribute('href');
-      if (!href) return el.outerHTML;
-      const abs = toAbsoluteUrl(href);
-      return `<link rel="stylesheet" href="${abs}" />`;
-    })
-    .concat(Array.from(document.querySelectorAll('style')).map((el) => el.outerHTML))
-    .join('\n');
-}
-
-/** Self-contained letterhead + layout fallbacks when Tailwind fails to load in time */
-const RECEIPT_PRINT_CSS = `
-  @page { size: A4; margin: 10mm; }
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: #fff !important;
-    color: #111 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    font-family: Arial, Helvetica, sans-serif;
-  }
-  .sale-receipt-sheet {
-    width: 100% !important;
-    max-width: none !important;
-    min-height: auto !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    background: #fff !important;
-    color: #111 !important;
-    box-sizing: border-box;
-  }
-  .mx-receipt-letterhead {
-    text-align: center;
-    padding-bottom: 8px;
-    border-bottom: 2.5px solid #000;
-  }
-  .mx-brand {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 1px;
-    letter-spacing: -0.5px;
-  }
-  .mx-brand-marvel {
-    font-size: 34px !important;
-    font-weight: 800 !important;
-    font-style: italic !important;
-    color: #4b5563 !important;
-    line-height: 1 !important;
-    letter-spacing: -0.5px;
-  }
-  .mx-brand-x {
-    display: inline-block !important;
-    font-size: 42px !important;
-    font-weight: 900 !important;
-    font-style: italic !important;
-    color: #e10600 !important;
-    line-height: 0.85 !important;
-    transform: skewX(-8deg);
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-  .mx-receipt-redbar {
-    height: 10px !important;
-    background: #e10600 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-`;
-
-function waitForStyles(doc: Document, timeoutMs = 1500): Promise<void> {
-  const links = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
-  if (links.length === 0) return Promise.resolve();
-
-  return new Promise((resolve) => {
-    let remaining = links.length;
-    const done = () => {
-      remaining -= 1;
-      if (remaining <= 0) resolve();
-    };
-    const timer = window.setTimeout(() => resolve(), timeoutMs);
-    for (const link of links) {
-      const el = link as HTMLLinkElement;
-      if (el.sheet) {
-        done();
-        continue;
-      }
-      el.addEventListener('load', () => {
-        if (remaining === 1) window.clearTimeout(timer);
-        done();
-      });
-      el.addEventListener('error', () => {
-        if (remaining === 1) window.clearTimeout(timer);
-        done();
-      });
-    }
-  });
+function escapeTitle(title: string): string {
+  return title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 export function printHtmlFragment(html: string, title: string): void {
@@ -161,22 +37,32 @@ export function printHtmlFragment(html: string, title: string): void {
     return;
   }
 
-  const styles = collectStylesheetTags();
-  const bodyHtml = absolutizeHtmlUrls(html);
-  const safeTitle = title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const baseHref = `${window.location.origin}/`;
+  // Ensure styles exist even if the cloned node somehow omitted <style>
+  const hasEmbeddedStyle = /<style[\s>]/i.test(html);
+  const styleBlock = hasEmbeddedStyle
+    ? ''
+    : `<style>${RECEIPT_SHEET_CSS}</style>`;
 
   doc.open();
   doc.write(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <base href="${baseHref}" />
-  <title>${safeTitle}</title>
-  ${styles}
-  <style>${RECEIPT_PRINT_CSS}</style>
+  <title>${escapeTitle(title)}</title>
+  <style>
+    @page { size: A4; margin: 8mm; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fff !important;
+      color: #111 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  </style>
+  ${styleBlock}
 </head>
-<body>${bodyHtml}</body>
+<body>${html}</body>
 </html>`);
   doc.close();
 
@@ -199,17 +85,15 @@ export function printHtmlFragment(html: string, title: string): void {
   win.addEventListener('afterprint', cleanup);
   window.addEventListener('focus', onFocusCleanup);
 
-  void waitForStyles(doc).then(() => {
-    // Extra frame for layout after CSS applies
-    window.setTimeout(() => {
-      try {
-        win.focus();
-        win.print();
-      } catch {
-        cleanup();
-        return;
-      }
-      window.setTimeout(cleanup, 120_000);
-    }, 150);
-  });
+  // Give the browser a beat to layout tables + colors before opening the dialog
+  window.setTimeout(() => {
+    try {
+      win.focus();
+      win.print();
+    } catch {
+      cleanup();
+      return;
+    }
+    window.setTimeout(cleanup, 120_000);
+  }, 400);
 }

@@ -1,7 +1,8 @@
 import type { Customer, PaymentMethod, Vehicle, VehicleDocument } from '@/types';
 import { formatPaymentMethod } from '@/utils/constants';
-import { formatDate, formatPKR } from '@/utils/format';
-import { amountToWordsPKR, cnicDigits } from '@/utils/number-words';
+import { formatCNIC, formatDate, formatPKR } from '@/utils/format';
+import { amountToWordsPKR } from '@/utils/number-words';
+import { RECEIPT_SHEET_CSS } from '@/components/sales/receiptSheetCss';
 
 export interface VehicleSaleReceiptProps {
   receiptNo: string;
@@ -15,75 +16,53 @@ export interface VehicleSaleReceiptProps {
   salePrice?: number;
   balance?: number;
   paymentMethod?: PaymentMethod | null;
+  /** Optional father/husband name if stored in remarks as "S/O: …" */
+  time?: string;
 }
 
-function Field({ label, value }: { label: string; value?: string | number | null }) {
+function yesNo(value?: boolean | null): string {
+  if (value == null) return '';
+  return value ? 'Yes' : 'No';
+}
+
+function personSo(person?: Customer | null): string {
+  if (!person?.remarks) return '';
+  const match = person.remarks.match(/(?:s\/o|d\/o|w\/o|son of|daughter of)\s*[:\-]?\s*(.+)/i);
+  return match?.[1]?.trim() ?? '';
+}
+
+function personAddress(person?: Customer | null): string {
+  if (!person) return '';
+  return [person.address, person.city].filter(Boolean).join(', ');
+}
+
+function Row({ label, value, labelClass = 'lbl' }: { label: string; value?: string; labelClass?: string }) {
   return (
-    <div className="grid grid-cols-[auto_1fr] items-end gap-x-1.5 gap-y-0.5">
-      <span className="whitespace-nowrap text-[9.5px] text-zinc-500">{label}</span>
-      <span className="min-h-[14px] border-b border-black px-0.5 pb-px text-[10.5px] font-semibold text-zinc-900">
-        {value || '—'}
-      </span>
-    </div>
+    <tr>
+      <td className={labelClass}>{label}</td>
+      <td>{value || ''}</td>
+    </tr>
   );
 }
 
-function CnicBoxes({ cnic }: { cnic: string }) {
-  const digits = cnicDigits(cnic);
-  return (
-    <div className="flex items-center gap-[3px]">
-      {digits.slice(0, 5).map((d, i) => (
-        <span
-          key={`a${i}`}
-          className="flex h-[15px] w-3 items-center justify-center border border-black text-[9px] font-bold"
-        >
-          {d}
-        </span>
-      ))}
-      <span className="mb-0.5 w-2 border-b border-black" />
-      {digits.slice(5, 12).map((d, i) => (
-        <span
-          key={`b${i}`}
-          className="flex h-[15px] w-3 items-center justify-center border border-black text-[9px] font-bold"
-        >
-          {d}
-        </span>
-      ))}
-      <span className="mb-0.5 w-2 border-b border-black" />
-      <span className="flex h-[15px] w-3 items-center justify-center border border-black text-[9px] font-bold">
-        {digits[12]}
-      </span>
-    </div>
-  );
-}
-
-function PersonBlock({
-  title,
-  person,
+function PairRow({
+  leftLabel,
+  leftValue,
+  rightLabel,
+  rightValue,
 }: {
-  title: string;
-  person?: Customer | null;
+  leftLabel: string;
+  leftValue?: string;
+  rightLabel: string;
+  rightValue?: string;
 }) {
   return (
-    <section>
-      <h3 className="mb-1.5 border-b border-black pb-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-900">
-        {title}
-      </h3>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Field label="Full name" value={person?.full_name} />
-        <Field label="Phone" value={person?.mobile} />
-        <div className="grid gap-0.5 sm:col-span-2">
-          <span className="text-[9.5px] text-zinc-500">CNIC</span>
-          <CnicBoxes cnic={person?.cnic ?? ''} />
-        </div>
-        <div className="sm:col-span-2">
-          <Field
-            label="Permanent address"
-            value={[person?.address, person?.city].filter(Boolean).join(', ')}
-          />
-        </div>
-      </div>
-    </section>
+    <tr>
+      <td className="lbl-narrow">{leftLabel}</td>
+      <td>{leftValue || ''}</td>
+      <td className="lbl-narrow">{rightLabel}</td>
+      <td>{rightValue || ''}</td>
+    </tr>
   );
 }
 
@@ -94,279 +73,266 @@ export function VehicleSaleReceipt({
   buyer,
   seller,
   document,
-  authorizedName = 'Marvel X',
   amountReceived = 0,
-  salePrice,
-  balance,
   paymentMethod,
+  time,
 }: VehicleSaleReceiptProps) {
   const received = amountReceived;
-  const price = salePrice ?? received;
-  const remaining = balance ?? Math.max(0, price - received);
-  const saleDate = new Date(date);
+  const saleDate = new Date(date.includes('T') ? date : `${date}T12:00:00`);
   const dayName = Number.isNaN(saleDate.getTime())
-    ? '—'
+    ? ''
     : saleDate.toLocaleDateString('en-PK', { weekday: 'long' });
+  const timeLabel =
+    time ||
+    (Number.isNaN(saleDate.getTime())
+      ? ''
+      : saleDate.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true }));
 
-  const vehicleTitle = [vehicle.make, vehicle.model, vehicle.variant].filter(Boolean).join(' ');
+  const modelLabel = [vehicle.model, vehicle.variant].filter(Boolean).join(' ');
   const paymentLabel = paymentMethod ? formatPaymentMethod(paymentMethod) : '';
+  const amountCell = paymentLabel
+    ? `${formatPKR(received)} ${paymentLabel}`
+    : formatPKR(received);
 
   return (
-    <article className="sale-receipt-sheet mx-auto flex min-h-[297mm] w-[210mm] max-w-full flex-col bg-white px-8 pb-0 pt-6 text-[10.5px] leading-snug text-zinc-900 print:px-0 print:pt-0">
-      <header
-        className="mx-receipt-letterhead border-b-[2.5px] border-black pb-2 text-center"
-        style={{
-          textAlign: 'center',
-          paddingBottom: 8,
-          borderBottom: '2.5px solid #000',
-        }}
-      >
-        <div
-          className="mx-brand"
-          aria-label="Marvel X"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'baseline',
-            gap: 1,
-            letterSpacing: '-0.5px',
-          }}
-        >
-          <span
-            className="mx-brand-marvel"
-            style={{
-              fontSize: 34,
-              fontWeight: 800,
-              fontStyle: 'italic',
-              color: '#4b5563',
-              lineHeight: 1,
-              fontFamily: 'Arial Black, Arial, Helvetica, sans-serif',
-            }}
-          >
-            MARVEL
-          </span>
-          <span
-            className="mx-brand-x"
-            style={{
-              display: 'inline-block',
-              fontSize: 42,
-              fontWeight: 900,
-              fontStyle: 'italic',
-              color: '#e10600',
-              lineHeight: 0.85,
-              transform: 'skewX(-8deg)',
-              fontFamily: 'Arial Black, Arial, Helvetica, sans-serif',
-              WebkitPrintColorAdjust: 'exact',
-              printColorAdjust: 'exact',
-            }}
-          >
-            X
-          </span>
+    <article className="mx-receipt sale-receipt-sheet">
+      {/* Embedded styles travel with the HTML clone into the print iframe */}
+      <style dangerouslySetInnerHTML={{ __html: RECEIPT_SHEET_CSS }} />
+
+      <header className="mx-receipt-letterhead">
+        <div className="mx-receipt-brand" aria-label="Marvel X">
+          <span className="mx-receipt-brand-marvel">MARVEL</span>
+          <span className="mx-receipt-brand-x">X</span>
         </div>
       </header>
 
-      <div className="mt-2.5 mb-2 flex items-end justify-between gap-3">
-        <h1 className="m-0 text-[15px] font-bold uppercase tracking-wide">
-          Vehicle Sale &amp; Purchase Receipt
-        </h1>
-        <div className="grid min-w-[210px] grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[10px]">
-          <span className="text-zinc-500">Receipt No.</span>
-          <span className="border-b border-black font-semibold">{receiptNo}</span>
-          <span className="text-zinc-500">Date</span>
-          <span className="border-b border-black font-semibold">{formatDate(date)}</span>
-          <span className="text-zinc-500">Day</span>
-          <span className="border-b border-black font-semibold">{dayName}</span>
-          <span className="text-zinc-500">Stock No.</span>
-          <span className="border-b border-black font-semibold">{vehicle.stock_number}</span>
-        </div>
+      <div className="mx-receipt-title-row">
+        <h1 className="mx-receipt-doc-title">Vehicle Sale &amp; Purchase Receipt</h1>
+        <table className="mx-receipt-meta">
+          <tbody>
+            <tr>
+              <td>Receipt No.</td>
+              <td>{receiptNo}</td>
+            </tr>
+            <tr>
+              <td>Date</td>
+              <td>{formatDate(date)}</td>
+            </tr>
+            <tr>
+              <td>Day</td>
+              <td>{dayName}</td>
+            </tr>
+            <tr>
+              <td>Time</td>
+              <td>{timeLabel}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <div className="mt-2 space-y-2.5">
-        <PersonBlock title="1. Seller details" person={seller} />
+      <section className="mx-receipt-section">
+        <h2 className="mx-receipt-section-title">1. Seller Details</h2>
+        <table className="mx-receipt-table">
+          <tbody>
+            <Row label="Name" value={seller?.full_name} />
+            <Row label="S/O" value={personSo(seller)} />
+            <Row label="Phone" value={seller?.mobile} />
+            <Row label="CNIC" value={seller?.cnic ? formatCNIC(seller.cnic) : ''} />
+            <Row label="Address" value={personAddress(seller)} />
+          </tbody>
+        </table>
+      </section>
 
-        <section>
-          <h3 className="mb-1.5 border-b border-black pb-0.5 text-[10px] font-bold uppercase tracking-wider">
-            2. Vehicle details
-          </h3>
-          <div className="grid gap-1.5 sm:grid-cols-3">
-            <Field label="Registration No." value={vehicle.registration_number} />
-            <Field label="Chassis No." value={vehicle.chassis_number} />
-            <Field label="Engine No." value={vehicle.engine_number} />
-            <Field label="Make / Model" value={vehicleTitle} />
-            <Field label="Model year" value={String(vehicle.model_year || '')} />
-            <Field label="Color" value={vehicle.color} />
-            <Field label="Registration city" value={vehicle.registration_city} />
-            <Field
-              label="Fuel / Transmission"
-              value={[vehicle.fuel_type, vehicle.transmission].filter(Boolean).join(' / ')}
+      <section className="mx-receipt-section">
+        <h2 className="mx-receipt-section-title">2. Vehicle Details</h2>
+        <table className="mx-receipt-table">
+          <tbody>
+            <PairRow
+              leftLabel="Registration No."
+              leftValue={vehicle.registration_number}
+              rightLabel="Chassis No."
+              rightValue={vehicle.chassis_number}
             />
-            <Field
-              label="Mileage"
-              value={vehicle.mileage ? `${vehicle.mileage.toLocaleString('en-PK')} km` : ''}
+            <PairRow
+              leftLabel="Engine No."
+              leftValue={vehicle.engine_number}
+              rightLabel="Make"
+              rightValue={vehicle.make}
             />
-          </div>
-          <div className="mt-1.5 grid gap-1.5 sm:grid-cols-4">
-            <Field label="Original registration book" value={document?.registration_book ? 'Yes' : 'No'} />
-            <Field label="Original file" value={document?.original_file ? 'Yes' : 'No'} />
-            <Field label="Tax token" value={document?.tax_token ? 'Yes' : 'No'} />
-            <Field label="Insurance" value={document?.insurance ? 'Yes' : 'No'} />
-          </div>
-        </section>
-
-        <PersonBlock title="3. Buyer details" person={buyer} />
-
-        <section>
-          <h3 className="mb-1.5 border-b border-black pb-0.5 text-[10px] font-bold uppercase tracking-wider">
-            4. Payment
-          </h3>
-          <div className="grid gap-1.5 sm:grid-cols-2">
-            <Field
-              label="Amount received (cash / cheque advance)"
-              value={
-                paymentLabel
-                  ? `${formatPKR(received)} (${paymentLabel})`
-                  : formatPKR(received)
-              }
+            <PairRow
+              leftLabel="Model"
+              leftValue={modelLabel}
+              rightLabel="Engine Capacity"
+              rightValue=""
             />
-            <Field label="Amount in words" value={amountToWordsPKR(received)} />
-            <Field label="Sale / purchase price" value={formatPKR(price)} />
-            <Field label="Balance remaining" value={formatPKR(remaining)} />
-          </div>
-        </section>
+            <PairRow
+              leftLabel="Color"
+              leftValue={vehicle.color}
+              rightLabel="Quota"
+              rightValue={vehicle.registration_city}
+            />
+            <PairRow
+              leftLabel="Post Office"
+              leftValue={vehicle.registration_city}
+              rightLabel="Original Book"
+              rightValue={yesNo(document?.registration_book)}
+            />
+            <PairRow
+              leftLabel="Original File"
+              leftValue={yesNo(document?.original_file)}
+              rightLabel="File Pages"
+              rightValue=""
+            />
+            <PairRow
+              leftLabel="Computerized Plate"
+              leftValue=""
+              rightLabel="Stock No."
+              rightValue={vehicle.stock_number}
+            />
+          </tbody>
+        </table>
+      </section>
 
-        <div className="border border-black p-2 text-justify text-[9.5px]">
-          <strong>Seller&apos;s declaration:</strong> I confirm that I have sold the above vehicle with
-          complete documents. As of this date, the vehicle is free from theft claims, unpaid
-          installments, court cases, and other legal disputes. If any such issue arises relating to
-          the period before this sale, the <strong>seller</strong> shall be solely responsible —{' '}
-          <strong>not Marvel X showroom</strong>. I sign this receipt of my own free will, in full
-          consciousness, and in the presence of witnesses.
+      <section className="mx-receipt-section">
+        <h2 className="mx-receipt-section-title">3. Buyer Details</h2>
+        <table className="mx-receipt-table">
+          <tbody>
+            <Row label="Name" value={buyer?.full_name} />
+            <Row label="S/O" value={personSo(buyer)} />
+            <Row label="Phone" value={buyer?.mobile} />
+            <Row label="CNIC" value={buyer?.cnic ? formatCNIC(buyer.cnic) : ''} />
+            <Row label="Address" value={personAddress(buyer)} />
+          </tbody>
+        </table>
+      </section>
+
+      <section className="mx-receipt-section">
+        <h2 className="mx-receipt-section-title">4. Payment Details</h2>
+        <table className="mx-receipt-table">
+          <tbody>
+            <Row label="Amount" value={amountCell} />
+            <Row label="Amount in Words" value={amountToWordsPKR(received)} />
+          </tbody>
+        </table>
+      </section>
+
+      <section className="mx-receipt-section">
+        <h2 className="mx-receipt-section-title">5. Seller Declaration</h2>
+        <div className="mx-receipt-legal">
+          I, the undersigned seller, declare that I am the true and lawful owner of the
+          above-mentioned vehicle. All information provided is correct to the best of my knowledge. I
+          have received the full and final payment as mentioned above. I further declare that the
+          vehicle is free from any legal claims, bank loans, or police reports, and I indemnify the
+          buyer from any previous legal issues. The vehicle is sold on an &lsquo;as-is,
+          where-is&rsquo; basis. No claims, complaints, or warranties of any kind will be accepted
+          after the date of purchase. Marvel X showroom is not responsible for any dispute relating
+          to the period before this transaction.
         </div>
+      </section>
 
-        <section className="grid gap-2 sm:grid-cols-3" aria-label="Signatures">
-          <div className="flex min-h-[160px] flex-col border border-black p-2">
-            <h4 className="mb-1.5 border-b border-zinc-300 pb-1 text-center text-[9.5px] font-bold uppercase tracking-wide">
-              Seller
-            </h4>
-            <div className="space-y-1.5">
-              <Field label="Signature" value="" />
-              <div className="grid grid-cols-2 gap-1.5">
-                <div>
-                  <span className="text-[9.5px] text-zinc-500">Thumb</span>
-                  <div className="mt-0.5 flex h-9 items-center justify-center border border-dashed border-zinc-500 text-[8.5px] text-zinc-500">
-                    Thumb
-                  </div>
-                </div>
-                <div>
-                  <span className="text-[9.5px] text-zinc-500">Stamp</span>
-                  <div className="mt-0.5 flex h-9 items-center justify-center border border-dashed border-zinc-500 text-[8.5px] text-zinc-500">
-                    Ticket
-                  </div>
-                </div>
-              </div>
+      <section className="mx-receipt-section" aria-label="Signatures">
+        <h2 className="mx-receipt-section-title">6. Signatures</h2>
+        <div className="mx-receipt-signs">
+          <div className="mx-receipt-sign-col">
+            <h4>Seller</h4>
+            <div className="mx-receipt-sig-line" />
+            <div className="mx-receipt-sign-row">
+              <span className="k">Name:</span>
+              <span>{seller?.full_name || ''}</span>
             </div>
-            <div className="mt-auto border-t border-zinc-300 pt-1.5">
-              <p className="mb-1 text-[8.5px] font-bold uppercase tracking-wide">Witness (seller)</p>
-              <Field label="Name" value="" />
-              <Field label="Phone" value="" />
-              <Field label="Signature" value="" />
+            <div className="mx-receipt-sign-row">
+              <span className="k">CNIC:</span>
+              <span>{seller?.cnic ? formatCNIC(seller.cnic) : ''}</span>
+            </div>
+            <div className="mx-receipt-sign-row" style={{ marginTop: 10 }}>
+              <span className="k">Witness:</span>
+              <span />
+            </div>
+            <div className="mx-receipt-sign-row">
+              <span className="k">CNIC:</span>
+              <span />
             </div>
           </div>
 
-          <div className="flex min-h-[160px] flex-col border border-black p-2">
-            <h4 className="mb-1.5 border-b border-zinc-300 pb-1 text-center text-[9.5px] font-bold uppercase tracking-wide">
-              Buyer acknowledgment
-            </h4>
-            <p className="mb-1.5 flex-1 text-justify text-[8.8px]">
-              I confirm that I have inspected the vehicle, received the original documents (file,
-              registration book, and transfer papers), and am satisfied with their condition. From
-              this point forward, responsibility for the vehicle is mine. The vehicle has been
-              purchased on an &lsquo;as-is, where-is&rsquo; basis. The buyer has inspected and
-              accepted the vehicle in its current condition. No claims, complaints, or warranties of
-              any kind will be accepted after the date of purchase.
-            </p>
-            <Field label="Buyer signature" value="" />
-            <div className="mt-1.5">
-              <Field label="Authorized signature" value={authorizedName} />
+          <div className="mx-receipt-sign-col">
+            <h4>Buyer Acknowledgment (With Showroom)</h4>
+            <div className="mx-receipt-stamp">Showroom Stamp</div>
+            <div className="mx-receipt-sign-row" style={{ marginTop: 'auto' }}>
+              <span className="k">Witness:</span>
+              <span />
             </div>
-            <div className="mt-auto flex h-10 items-end justify-center border-[1.5px] border-black pb-1 text-[9px] font-bold uppercase tracking-wide">
-              Showroom
+            <div className="mx-receipt-sign-row">
+              <span className="k">CNIC:</span>
+              <span />
             </div>
           </div>
 
-          <div className="flex min-h-[160px] flex-col border border-black p-2">
-            <h4 className="mb-1.5 border-b border-zinc-300 pb-1 text-center text-[9.5px] font-bold uppercase tracking-wide">
-              Buyer
-            </h4>
-            <div className="space-y-1.5">
-              <Field label="Signature" value="" />
-              <div className="grid grid-cols-2 gap-1.5">
-                <div>
-                  <span className="text-[9.5px] text-zinc-500">Thumb</span>
-                  <div className="mt-0.5 flex h-9 items-center justify-center border border-dashed border-zinc-500 text-[8.5px] text-zinc-500">
-                    Thumb
-                  </div>
-                </div>
-                <div>
-                  <span className="text-[9.5px] text-zinc-500">Stamp</span>
-                  <div className="mt-0.5 flex h-9 items-center justify-center border border-dashed border-zinc-500 text-[8.5px] text-zinc-500">
-                    Ticket
-                  </div>
-                </div>
-              </div>
+          <div className="mx-receipt-sign-col">
+            <h4>Buyer</h4>
+            <div className="mx-receipt-sig-line" />
+            <div className="mx-receipt-sign-row">
+              <span className="k">Name:</span>
+              <span>{buyer?.full_name || ''}</span>
             </div>
-            <div className="mt-auto border-t border-zinc-300 pt-1.5">
-              <p className="mb-1 text-[8.5px] font-bold uppercase tracking-wide">Witness (buyer)</p>
-              <Field label="Name" value="" />
-              <Field label="Phone" value="" />
-              <Field label="Signature" value="" />
+            <div className="mx-receipt-sign-row">
+              <span className="k">CNIC:</span>
+              <span>{buyer?.cnic ? formatCNIC(buyer.cnic) : ''}</span>
+            </div>
+            <div className="mx-receipt-sign-row" style={{ marginTop: 10 }}>
+              <span className="k">Witness:</span>
+              <span />
+            </div>
+            <div className="mx-receipt-sign-row">
+              <span className="k">CNIC:</span>
+              <span />
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <p className="border border-black bg-zinc-50 px-2 py-1.5 text-[9.5px] font-semibold">
-          Note: The buyer must transfer the vehicle into their own name within{' '}
-          <strong>15 days</strong>. After that, the showroom will not be responsible.
-        </p>
-      </div>
+      <p className="mx-receipt-note">
+        <strong>7. Important Note:</strong> It is the responsibility of the buyer to transfer the
+        ownership of the above vehicle within <strong>15 days</strong> from the date of purchase.
+      </p>
 
-      <footer className="mt-auto pt-2">
-        <div className="border-t-2 border-black pt-2">
-          <div className="grid gap-2 pb-2.5 sm:grid-cols-3">
-            <div className="flex gap-1.5">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-500 text-[10px] text-white">
+      <footer className="mx-receipt-footer">
+        <div className="mx-receipt-footer-rule">
+          <div className="mx-receipt-contacts">
+            <span className="mx-receipt-contact">
+              <span className="ico" aria-hidden="true">
                 ☎
               </span>
-              <div>
-                <strong className="block text-[9px]">Call to find out more</strong>
-                <span className="block text-[9px]">+92 307 7766300</span>
-              </div>
-            </div>
-            <div className="flex gap-1.5">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-500 text-[10px] text-white">
+              +92 307 7766300
+            </span>
+            <span className="mx-receipt-sep" aria-hidden="true">
+              |
+            </span>
+            <span className="mx-receipt-contact">
+              <span className="ico" aria-hidden="true">
                 ◎
               </span>
-              <div>
-                <strong className="block text-[9px]">More info</strong>
-                <span className="block text-[9px]">www.marvelx.com.pk</span>
-                <span className="block text-[9px]">marvelxpk@gmail.com</span>
-              </div>
-            </div>
-            <div className="flex gap-1.5">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-500 text-[10px] text-white">
+              www.marvelx.com.pk
+            </span>
+            <span className="mx-receipt-sep" aria-hidden="true">
+              |
+            </span>
+            <span className="mx-receipt-contact">
+              <span className="ico" aria-hidden="true">
+                ✉
+              </span>
+              marvelxpk@gmail.com
+            </span>
+            <span className="mx-receipt-sep" aria-hidden="true">
+              |
+            </span>
+            <span className="mx-receipt-contact">
+              <span className="ico" aria-hidden="true">
                 📍
               </span>
-              <div>
-                <strong className="block text-[9px]">Address</strong>
-                <span className="block text-[9px]">435/G-4 Block, Johar Town, Lahore.</span>
-              </div>
-            </div>
+              435/G-4 Block Johar Town Lahore
+            </span>
           </div>
         </div>
-        <div
-          className="mx-receipt-redbar mx-[-2rem] h-2.5 print:mx-0"
-          style={{ backgroundColor: '#e10600', height: '10px' }}
-          aria-hidden="true"
-        />
       </footer>
     </article>
   );
