@@ -10,6 +10,7 @@ export const EXPENSE_CATEGORIES = {
     utilities: 'cat_005',
     salaries: 'cat_006',
     rent: 'cat_007',
+    miscellaneous: 'cat_010',
   },
   ppf: {
     rent: 'cat_008',
@@ -36,6 +37,7 @@ export const PPF_RENT_SALARY_CATEGORY_IDS: Set<string> = new Set([
 export const SHOWROOM_OTHER_CATEGORY_IDS: Set<string> = new Set([
   EXPENSE_CATEGORIES.showroom.marketing,
   EXPENSE_CATEGORIES.showroom.utilities,
+  EXPENSE_CATEGORIES.showroom.miscellaneous,
 ]);
 
 export const DEFAULT_EXPENSE_CATEGORIES = [
@@ -48,6 +50,11 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
   { category_id: 'cat_007', category_name: 'Showroom Rent', description: 'Showroom premises rent and lease' },
   { category_id: 'cat_008', category_name: 'PPF Studio Rent', description: 'PPF studio premises rent and lease' },
   { category_id: 'cat_009', category_name: 'PPF Studio Salaries', description: 'PPF studio staff salaries and benefits' },
+  {
+    category_id: 'cat_010',
+    category_name: 'Miscellaneous',
+    description: 'Food, tea, and other general showroom expenses',
+  },
 ] as const;
 
 export function categoryOptionsForIds(
