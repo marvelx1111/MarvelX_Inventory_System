@@ -217,10 +217,45 @@ class DataStore {
       rolePermissions.push({ role_id: 'rol_001', permission_id: 'perm_011' });
     }
 
+    // Expense clerk (rol_002): dashboard + expenses only
+    const expenseClerkPerms = new Set(['perm_001', 'perm_006']);
+    const normalizedRolePermissions = [
+      ...rolePermissions.filter((entry) => entry.role_id !== 'rol_002'),
+      ...[...expenseClerkPerms].map((permission_id) => ({
+        role_id: 'rol_002',
+        permission_id,
+      })),
+    ];
+
+    const roles = data.roles.map((role) =>
+      role.role_id === 'rol_002'
+        ? {
+            ...role,
+            role_name: 'Expense Clerk',
+            description: 'Showroom and vehicle expense entry',
+          }
+        : role,
+    );
+
+    const users = data.users.map((user) => {
+      if (user.user_id !== 'usr_002') return user;
+      return {
+        ...user,
+        full_name: user.full_name === 'Sales' ? 'Expense' : user.full_name,
+        username: user.username === 'sales' ? 'expense' : user.username,
+        email:
+          user.email === 'sales@marvelx.pk' || user.email === 'sale@marvelx.pk'
+            ? 'expense@marvelx.pk'
+            : user.email,
+      };
+    });
+
     this.data = {
       ...data,
+      roles,
       permissions,
-      rolePermissions,
+      rolePermissions: normalizedRolePermissions,
+      users,
       expenseCategories,
       financeSettings: resolveFinanceSettings(data.financeSettings),
       sales: data.sales.map((sale) => {
@@ -386,6 +421,7 @@ class DataStore {
   authenticateDemo(username: string, password: string): User | null {
     const demoPasswords: Record<string, string | undefined> = {
       admin: import.meta.env.VITE_DEMO_PASSWORD_ADMIN,
+      expense: import.meta.env.VITE_DEMO_PASSWORD_SALES,
       sales: import.meta.env.VITE_DEMO_PASSWORD_SALES,
       ppf_manager: import.meta.env.VITE_DEMO_PASSWORD_PPF,
     };

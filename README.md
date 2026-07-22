@@ -50,7 +50,7 @@ Use **email** (not username) on the login page. Passwords live only in `.env.loc
 | Portal | Email |
 |--------|-------|
 | Admin | `admin@marvelx.pk` |
-| Sales | `sales@marvelx.pk` |
+| Expense | `expense@marvelx.pk` |
 | PPF Manager | `ppf@marvelx.pk` |
 
 Set `AUTH_PASSWORD_ADMIN`, `AUTH_PASSWORD_SALES`, and `AUTH_PASSWORD_PPF` in `.env.local`, then run `npm run db:auth-bootstrap`. Use strong unique passwords (12+ characters).

@@ -6,7 +6,7 @@ export function createSeedData(): AppData {
   return {
     roles: [
       { role_id: 'rol_001', role_name: 'Admin', description: 'Full system access' },
-      { role_id: 'rol_002', role_name: 'Salesperson', description: 'Showroom sales and inventory' },
+      { role_id: 'rol_002', role_name: 'Expense Clerk', description: 'Showroom and vehicle expense entry' },
       { role_id: 'rol_003', role_name: 'PPF Manager', description: 'Paint protection film operations' },
     ],
 
@@ -37,10 +37,7 @@ export function createSeedData(): AppData {
       { role_id: 'rol_001', permission_id: 'perm_009' },
       { role_id: 'rol_001', permission_id: 'perm_010' },
       { role_id: 'rol_002', permission_id: 'perm_001' },
-      { role_id: 'rol_002', permission_id: 'perm_002' },
-      { role_id: 'rol_002', permission_id: 'perm_003' },
-      { role_id: 'rol_002', permission_id: 'perm_004' },
-      { role_id: 'rol_002', permission_id: 'perm_005' },
+      { role_id: 'rol_002', permission_id: 'perm_006' },
       { role_id: 'rol_003', permission_id: 'perm_001' },
       { role_id: 'rol_003', permission_id: 'perm_008' },
     ],
@@ -59,9 +56,9 @@ export function createSeedData(): AppData {
       {
         user_id: 'usr_002',
         role_id: 'rol_002',
-        full_name: 'Sales',
-        username: 'sales',
-        email: 'sales@marvelx.pk',
+        full_name: 'Expense',
+        username: 'expense',
+        email: 'expense@marvelx.pk',
         phone: '',
         status: 'active',
         auth_user_id: null,

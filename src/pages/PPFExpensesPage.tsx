@@ -31,9 +31,9 @@ const EMPTY_FORM: {
 };
 
 export function PPFExpensesPage() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, hasPermission } = useAuth();
   const { success, error: toastError } = useToast();
-  const canAddExpense = isAdmin;
+  const canAddExpense = isAdmin || hasPermission('expenses');
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [addOpen, setAddOpen] = useState(false);
@@ -97,7 +97,7 @@ export function PPFExpensesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canAddExpense) {
-      toastError('Not allowed', 'Only administrators can add expenses.');
+      toastError('Not allowed', 'You do not have permission to add expenses.');
       return;
     }
     const amount = parseMoneyInput(form.amount);

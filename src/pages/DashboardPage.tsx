@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { CountUp } from '@/components/ui/CountUp';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
+import { useAuth } from '@/contexts/AuthContext';
 import { store } from '@/data/store';
 import { formatDate, formatPKR } from '@/utils/format';
 import { PageTransition } from './PageTransition';
@@ -14,6 +15,13 @@ import { usePageLoading } from './hooks/usePageLoading';
 const SalesTrendChart = lazy(() =>
   import('@/components/charts/SalesTrendChart').then((m) => ({ default: m.SalesTrendChart })),
 );
+
+/** Financial KPIs — admin only (profit / balances / sales counts). */
+const ADMIN_ONLY_KPI_KEYS = new Set([
+  'monthlySales',
+  'monthlyProfit',
+  'pendingReceivables',
+]);
 
 const KPI_CONFIG = [
   {
@@ -77,6 +85,7 @@ function getMonthlyMetrics() {
 
 export function DashboardPage() {
   const loading = usePageLoading();
+  const { isAdmin } = useAuth();
   const kpis = store.getDashboardKPIs();
   const monthly = getMonthlyMetrics();
   const trendData = store.getSalesTrend(6).map((p) => ({
@@ -96,12 +105,16 @@ export function DashboardPage() {
     ppfRollsInStock: kpis.ppfRollsInStock,
   };
 
+  const visibleKpis = KPI_CONFIG.filter(
+    (kpi) => isAdmin || !ADMIN_ONLY_KPI_KEYS.has(kpi.key),
+  );
+
   if (loading) {
     return (
       <PageTransition>
         <PageHeader title="Dashboard" subtitle="Overview and analytics" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: isAdmin ? 6 : 3 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))}
         </div>
@@ -118,7 +131,7 @@ export function DashboardPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {KPI_CONFIG.map((kpi, index) => (
+        {visibleKpis.map((kpi, index) => (
           <motion.div
             key={kpi.key}
             initial={{ opacity: 0, y: 16 }}
@@ -150,13 +163,18 @@ export function DashboardPage() {
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
-            <SalesTrendChart data={trendData} />
-          </Suspense>
-        </div>
+        {isAdmin && (
+          <div className="lg:col-span-3">
+            <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+              <SalesTrendChart data={trendData} />
+            </Suspense>
+          </div>
+        )}
 
-        <Card padding="none" className="lg:col-span-2 overflow-hidden">
+        <Card
+          padding="none"
+          className={`${isAdmin ? 'lg:col-span-2' : 'lg:col-span-5'} overflow-hidden`}
+        >
           <CardHeader className="border-b border-[var(--border-secondary)] px-5 py-4">
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>

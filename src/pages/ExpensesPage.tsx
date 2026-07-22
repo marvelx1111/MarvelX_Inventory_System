@@ -102,8 +102,9 @@ function addButtonLabel(tab: ExpenseTab): string {
 
 export function ExpensesPage() {
   const loading = usePageLoading();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, hasPermission } = useAuth();
   const { success, error } = useToast();
+  const canAddExpense = isAdmin || hasPermission('expenses');
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState<ExpenseTab>('showroom_rent_salaries');
   const [addOpen, setAddOpen] = useState(false);
@@ -183,8 +184,8 @@ export function ExpensesPage() {
 
   const handleSubmitExpense = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin) {
-      error('Not allowed', 'Only administrators can add expenses.');
+    if (!canAddExpense) {
+      error('Not allowed', 'You do not have permission to add expenses.');
       return;
     }
     const amount = parseMoneyInput(form.amount);
@@ -269,7 +270,7 @@ export function ExpensesPage() {
         title="Expenses"
         subtitle="Vehicle costs, showroom rent & salaries, and PPF studio rent & salaries"
         actions={
-          isAdmin ? (
+          canAddExpense ? (
             <Button onClick={() => openAddModal(activeTab)}>{addButtonLabel(activeTab)}</Button>
           ) : undefined
         }

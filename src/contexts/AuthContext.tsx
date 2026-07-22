@@ -172,8 +172,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const email = trimmedId.includes('@') ? trimmedId : `${trimmedId}@marvelx.pk`;
+        // Auth identity still on sales@ until Supabase email-change is confirmed;
+        // accept expense@ (and sale@) as login aliases for the same account.
+        const authEmail =
+          email === 'expense@marvelx.pk' || email === 'sale@marvelx.pk'
+            ? 'sales@marvelx.pk'
+            : email;
         const { data, error } = await client.auth.signInWithPassword({
-          email,
+          email: authEmail,
           password: trimmedPassword,
         });
 
