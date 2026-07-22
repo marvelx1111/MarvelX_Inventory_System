@@ -1,5 +1,6 @@
 import { createSeedData } from '@/data/seed';
 import {
+  ensureDefaultExpenseCategories,
   persistRowDelete,
   persistRowInsert,
   persistRowsDeleteByColumn,
@@ -870,6 +871,7 @@ class DataStore {
       amount,
     };
 
+    ensurePersisted(await ensureDefaultExpenseCategories(DEFAULT_EXPENSE_CATEGORIES));
     ensurePersisted(
       await persistRowInsert('showroom_expenses', expense as unknown as Record<string, unknown>),
     );

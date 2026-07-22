@@ -93,6 +93,29 @@ export async function persistRowUpsert(
   return { ok: true, persisted: true };
 }
 
+/** Seed any missing default expense categories (e.g. Miscellaneous) into Supabase. */
+export async function ensureDefaultExpenseCategories(
+  categories: readonly { category_id: string; category_name: string; description: string }[],
+): Promise<PersistResult> {
+  const resolved = requireClient();
+  if ('ok' in resolved) return resolved;
+
+  const { data: existing, error: readError } = await resolved.client
+    .from('expense_categories')
+    .select('category_id');
+  if (readError) return { ok: false, error: readError.message };
+
+  const have = new Set((existing ?? []).map((row) => row.category_id as string));
+  const missing = categories.filter((category) => !have.has(category.category_id));
+  if (missing.length === 0) return { ok: true, persisted: true };
+
+  const { error } = await resolved.client
+    .from('expense_categories')
+    .upsert([...missing], { onConflict: 'category_id' });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, persisted: true };
+}
+
 export function persistErrorMessage(result: PersistResult): string | null {
   if (!result.ok) return result.error;
   if (!result.persisted) {
